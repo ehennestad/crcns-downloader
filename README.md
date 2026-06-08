@@ -9,24 +9,27 @@ A pair of lightweight, zero-dependency Python command-line scripts to batch down
 
 ## ⚡ Zero Dependencies
 These scripts rely entirely on the **Python Standard Library**. No `pip install`, virtual environments, or external packages are required. They work out of the box on Windows, macOS, and Linux.
----## 📁 Repository Structure
+---
+
+## 📁 Repository Structure
 * `downloader.py` — Initializes datasets and batch downloads files based on user selection.
 * `validator.py` — Computes MD5 hashes of downloaded files and validates them against expected values.
 * `README.md` — Project documentation.
 * `LICENSE` — Terms of use (MIT License).
+---
 
----## 🚀 How It Works (Step-by-Step)
+## 🚀 How It Works (Step-by-Step)
 Managing a dataset involves an initialization phase, a quick file configuration step, and the final download/validation execution.
-### Step 1: Initialize the DatasetRun the download script with your dataset ID. On this first run, the script will fetch the metadata files and then pause to let you choose your downloads.
+### Step 1: Initialize the Dataset
+Run the download script with your dataset ID. On this first run, the script will fetch the metadata files and then pause to let you choose your downloads.
 ```bash
 python crcns-downloader.py YOUR_DATASET_ID
 ```
 
 **What happens next:**
 1. The script creates a local folder named after your dataset ID.
-2. It downloads two configuration files into that folder: `filelist.txt` and `checksums.md5`.3. The script prints instructions to your terminal and exits.
-
----### Step 2: Select Your Files
+2. It downloads two configuration files into that folder: `filelist.txt` and `checksums.md5`.3. The script prints instructions to your terminal and exits.---
+### Step 2: Select Your Files
 Open the newly downloaded `filelist.txt` file in any text editor. By default, every file is listed with a leading space. 
 
 You can control how files are selected by changing the **Mode** line at the top of the file, allowing you to make minimal edits depending on your needs.
@@ -54,8 +57,8 @@ Use this mode if you only want to download a **few** specific files from a large
 ```
 
 *(Advanced: You can use multiple `# mode='...'` lines throughout the file to switch selection modes mid-list).*
-
----### Step 3: Execute the DownloadRun the exact same command a second time. The script reads your customized `filelist.txt` and downloads your selected files.
+---
+### Step 3: Execute the DownloadRun the exact same command a second time. The script reads your customized `filelist.txt` and downloads your selected files.
 ```bash
 python downloader.py YOUR_DATASET_ID
 ```
@@ -65,7 +68,8 @@ Once your downloads are complete, run the validation script with the same datase
 ```bash
 python validator.py YOUR_DATASET_ID
 ```
----## 🤝 Contributing
+---
+## 🤝 Contributing
 Contributions, bug reports, and feature suggestions are welcome! 1. Fork the repository.
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
