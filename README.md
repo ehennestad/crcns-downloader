@@ -12,15 +12,18 @@ A pair of lightweight, zero-dependency Python command-line scripts to batch down
 ---
 
 ## 📁 Repository Structure
-* `downloader.py` — Initializes datasets and batch downloads files based on user selection.
-* `validator.py` — Computes MD5 hashes of downloaded files and validates them against expected values.
-* `crcns-account.txt` — Used to specify the username and password for the account on CRCNS.org used to download the files.
+* `crcns-download.py` — Initializes datasets and batch downloads files based on user selection.
+* `crcns-validate.py` — Computes MD5 hashes of downloaded files and validates them against expected values.
+* `crcns-account-template.txt` — A template used to create file `crcns-account.txt` which stores the account information for the CRCNS.org account used to download the files.
 * `README.md` — Project documentation.
 * `LICENSE` — Terms of use (MIT License).
 ---
 
+## 🚀 Initial Setup
+Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and then edit that file to specify the account at CRCNS.org used to download the data.   If you don't have an account you can crete one for free.
+
 ## 🚀 How It Works (Step-by-Step)
-Managing a dataset involves an initialization phase, a quick file configuration step, and the final download/validation execution.
+Downloading and verifying the files in a dataset involves an initialization phase, a quick file configuration step, and the final download/validation execution.
 ### Step 1: Initialize the Dataset
 Run the download script with your dataset ID. On this first run, the script will fetch the metadata files and then pause to let you choose your downloads.
 ```bash
