@@ -1,6 +1,6 @@
 # crcns-downloader
 
-# Batch downloader and validator for CRCNS.org
+Batch downloader and validator for CRCNS.org
 
 A pair of lightweight, zero-dependency Python command-line scripts to batch download datasets from the CRCNS.org repository and verify their integrity using MD5 checksums.
 
@@ -9,13 +9,13 @@ A pair of lightweight, zero-dependency Python command-line scripts to batch down
 
 ## ⚡ Zero Dependencies
 
-
 These scripts rely entirely on the **Python Standard Library**. No `pip install`, virtual environments, or external packages are required. They work out of the box on Windows, macOS, and Linux.
 ---
 
 ## 📁 Repository Structure
 * `downloader.py` — Initializes datasets and batch downloads files based on user selection.
 * `validator.py` — Computes MD5 hashes of downloaded files and validates them against expected values.
+* `crcns-account.txt` — Used to specify the username and password for the account on CRCNS.org used to download the files.
 * `README.md` — Project documentation.
 * `LICENSE` — Terms of use (MIT License).
 ---
