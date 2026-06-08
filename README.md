@@ -4,8 +4,8 @@
 
 A pair of lightweight, zero-dependency Python command-line scripts to batch download datasets from the CRCNS.org repository and verify their integrity using MD5 checksums.
 
-[![Python Version](https://shields.io)](https://www.python.org)
-[![License](https://shields.io)](LICENSE)
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## ⚡ Zero Dependencies
 These scripts rely entirely on the **Python Standard Library**. No `pip install`, virtual environments, or external packages are required. They work out of the box on Windows, macOS, and Linux.
