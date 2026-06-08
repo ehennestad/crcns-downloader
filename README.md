@@ -12,6 +12,11 @@ A pair of lightweight, zero-dependency Python command-line scripts to batch down
 These scripts rely entirely on the **Python Standard Library**. No `pip install`, virtual environments, or external packages are required. They work out of the box on Windows, macOS, and Linux.
 ---
 
+## Zero Dependencies
+
+These scripts rely entirely on the **Python Standard Library**. No `pip install`, virtual environments, or external packages are required. They work out of the box on Windows, macOS, and Linux.
+---
+
 ## 📁 Repository Structure
 * `downloader.py` — Initializes datasets and batch downloads files based on user selection.
 * `validator.py` — Computes MD5 hashes of downloaded files and validates them against expected values.
