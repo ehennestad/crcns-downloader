@@ -14,29 +14,31 @@ A pair of lightweight, zero-dependency Python command-line scripts to batch down
 ## 📁 Repository Structure
 * `crcns-download.py` — Initializes datasets and batch downloads files based on user selection.
 * `crcns-validate.py` — Computes MD5 hashes of downloaded files and validates them against expected values.
-* `crcns-account-template.txt` — A template used to create file `crcns-account.txt` which stores the account information for the CRCNS.org account used to download the files.
+* `crcns-account-template.txt` — A template used to create file `crcns-account.txt` which stores the account information for the CRCNS.org account used to download the files.  If you don't have an account you can create one for free.
+
 * `README.md` — Project documentation.
 * `LICENSE` — Terms of use (MIT License).
 ---
 
 ## 🚀 Initial Setup
-Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and then edit that file to specify the account at CRCNS.org used to download the data.   If you don't have an account you can crete one for free.
-
-## 🚀 How It Works (Step-by-Step)
+Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and then edit that file to specify the account at CRCNS.org used to download the data.  If you don't have an account you can create one for free.
+## 🚀 How to use the scripts (Step-by-Step)
 Downloading and verifying the files in a dataset involves an initialization phase, a quick file configuration step, and the final download/validation execution.
 ### Step 1: Initialize the Dataset
 Run the download script with your dataset ID. On this first run, the script will fetch the metadata files and then pause to let you choose your downloads.
 ```bash
-python crcns-downloader.py YOUR_DATASET_ID
+python crcns-downloader.py DATASET_ID
 ```
+Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or `hc-2`).
 
 **What happens next:**
-1. The script creates a local folder named after your dataset ID.
-2. It downloads two configuration files into that folder: `filelist.txt` and `checksums.md5`.3. The script prints instructions to your terminal and exits.---
+1. The script creates a local folder named the dataset_ID.
+2. It downloads two configuration files into that folder: `filelist.txt` and `checksums.md5`.3. The script prints instructions to your terminal and exits.
+---
 ### Step 2: Select Your Files
 Open the newly downloaded `filelist.txt` file in any text editor. By default, every file is listed with a leading space. 
 
-You can control how files are selected by changing the **Mode** line at the top of the file, allowing you to make minimal edits depending on your needs.
+You can control how files are selected by changing the **Mode** line near the top of the file, allowing you to make minimal edits depending on your needs.
 
 #### Option A: Default Mode (`# mode='default'`)
 Use this mode if you want to download **most** files in the dataset.
@@ -50,7 +52,7 @@ Use this mode if you want to download **most** files in the dataset.
 ```
 
 #### Option B: Selection Mode (`# mode='+'`)
-Use this mode if you only want to download a **few** specific files from a large dataset.
+Use this mode if you only want to download a **few** specific files from a dataset containing many files.
 * **To download a file:** Change the leading space to a `+` sign.
 * **To skip a file:** Leave it as-is (with the leading space).
 ```text
@@ -64,13 +66,13 @@ Use this mode if you only want to download a **few** specific files from a large
 ---
 ### Step 3: Execute the DownloadRun the exact same command a second time. The script reads your customized `filelist.txt` and downloads your selected files.
 ```bash
-python downloader.py YOUR_DATASET_ID
+python downloader.py DATASET_ID
 ```
 ---
 ### Step 4: Verify Your Files (`validator.py`)
 Once your downloads are complete, run the validation script with the same dataset ID. It reads the `checksums.md5` file and checks every downloaded file to guarantee nothing was corrupted.
 ```bash
-python validator.py YOUR_DATASET_ID
+python validator.py DATASET_ID
 ```
 ---
 ## 🤝 Contributing

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import http.cookiejar
 import urllib.request
@@ -7,6 +8,13 @@ import math
 import sys
 import pprint
 from pathlib import Path
+
+# Safely check if the user is running at least Python 3.8
+if sys.version_info < (3, 8):
+    print("Error: This script requires Python 3.8 or higher.", file=sys.stderr)
+    print(f"Your current version is {sys.version.split()[0]}.", file=sys.stderr)
+    sys.exit(1)
+
 
 ACCOUNT_FILE="crcns-account.txt"
 COOKIE_FILE = "session_cookies.txt"
@@ -232,8 +240,18 @@ class Dataset_downloader:
         url = f"{download_url_base}/{self.index_file}"
         output_filename = self.index_file
         self.requester.download_large_file(url, output_filename)
-        print(f"Just downloaded '{self.index_file}'.  Edit the file to indicate which files "
-            "should be downloaded, then rerun this script in order to download those files")
+        print("\n" + "="*50 + "\n"
+            "ℹ️  DATASET INITIALIZED SUCCESSFULLY\n"
+            "="*50 + "\n"
+            f"1. Open the file: {self.index_file}\n"
+            "2. Follow instructions at the top to edit the file and specify which files to download\n"
+            "   - With mode 'default' put a '#' in front of files to NOT be downloaded. "
+            " (All the others WILL be downloaded)\n"
+            "   - With mode '+', put a '+' in front of files to downloaded. (The others will NOT be downloaded.\n"
+            f"3. Run 'python downloader.py {self.dsid}' again to start.\n"
+            "="*50 + "\n")
+        # print(f"Just downloaded '{self.index_file}'.  Edit the file to indicate which files "
+        #     "should be downloaded, then rerun this script in order to download those files")
         exit(0)
 
     def download_checksums(self):
@@ -403,6 +421,40 @@ def get_valid_input(prompt, valid_choices, case_sensitive=False):
             
         print(f"Invalid choice! Please choose from: {', '.join(map(str, valid_choices))}\n")
 
+
+import argparse
+import sys
+
+def get_dataset_id():
+    parser = argparse.ArgumentParser(
+        description="Batch download files from a data repository." # Change text for validator script
+    )
+    
+    # Define a positional argument that is optional (nargs='?')
+    parser.add_argument(
+        'dataset_id', 
+        nargs='?', 
+        help="The unique ID of the dataset to process"
+    )
+    
+    args = parser.parse_args()
+    
+    # If the user didn't provide the argument, prompt them interactively
+    if args.dataset_id is None:
+        try:
+            args.dataset_id = input("Enter the dataset ID: ").strip()
+            if not args.dataset_id:
+                print("Error: Dataset ID cannot be empty.", file=sys.stderr)
+                sys.exit(1)
+        except (KeyboardInterrupt, EOFError):
+            print("\nOperation cancelled.")
+            sys.exit(1)
+            
+    return args.dataset_id
+
+# Usage
+dataset_id = get_dataset_id()
+print(file=sys.stderr, text=f"Processing dataset: {dataset_id}")
 
 def get_dsid():
     if len(sys.argv) > 2:
