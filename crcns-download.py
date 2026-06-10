@@ -28,6 +28,7 @@ site_url=f"https://{site_name}"
 apache_alias = "d"  # used to specify page (script) for downloading data
 download_url_base = f"{site_url}/{apache_alias}/"
 login_page=f"{site_url}/login_form"
+logout_page=f"{site_url}/logout"
 script_name = {os.path.basename(__file__)}
 
 # dsid = "hc-2"
@@ -461,6 +462,9 @@ class UserInputParser:
         and dataset ID) using the priority chain.  Returns self for chaining.
         """
         self._parse_args()
+        if self.logout:
+            # don't require other parameters if logging out
+            return
         self._apply_env_vars()
         self._apply_account_file()
         self._prompt_if_missing()
@@ -514,7 +518,14 @@ Examples:
             help=f"Path to credentials config file (default: {self.DEFAULT_CONFIG_FILE})",
         )
 
+        parser.add_argument(
+            "--logout", "-l",
+            action="store_true",
+            help=f"Logout of CRCNS.org (so will start a new session on next run)",
+        )
+
         args = parser.parse_args()
+        self.logout = args.logout
         self.username = args.username
         self.password = args.password
         self.dataset_id = args.dataset_id
@@ -636,6 +647,8 @@ def get_dsid():
 def main():
     ui = UserInputParser()
     requester = Requester()
+    if ui.logout:
+        print("Found logout again")
     login = Login_crcns(requester, ui.dataset_id, ui.username, ui.password)
     if not login.authorized:
         print(f"Unable to login to {login_page}.  Check file '{ACCOUNT_FILE} "
