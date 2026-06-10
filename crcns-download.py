@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import os
 import http.cookiejar
 import urllib.request
@@ -6,7 +7,9 @@ import urllib.error
 import re
 import math
 import sys
+import stat
 import pprint
+import getpass
 from pathlib import Path
 
 # Safely check if the user is running at least Python 3.8
@@ -25,6 +28,8 @@ site_url=f"https://{site_name}"
 apache_alias = "d"  # used to specify page (script) for downloading data
 download_url_base = f"{site_url}/{apache_alias}/"
 login_page=f"{site_url}/login_form"
+script_name = {os.path.basename(__file__)}
+
 # dsid = "hc-2"
 
 
@@ -151,17 +156,19 @@ with open(output_file, 'w') as file:
 
 class Login_crcns:
 
-    def __init__(self, requester, dsid):
+    def __init__(self, requester, dsid, username, password):
         # requester - Requester object
         # dsid - dataset id, something like 'hc-3'
         self.requester = requester
         self.dsid = dsid
+        self.username = username
+        self.password = password
         self.authorized = self.check_access(dsid)
         if self.authorized:
             self.method = "already authorized (from cookie)"
         else:
             self.method = "attempted login"
-            self.load_account_info()
+            # self.load_account_info()
             self.authorized = self.attempt_login()
         if not self.authorized:
             print(f"Unable to login to {login_page}.  Check file '{ACCOUNT_FILE} "
@@ -185,22 +192,22 @@ class Login_crcns:
                 authorized = False
         return authorized
 
-    def load_account_info(self):
-        """Load account information from ACCOUNT_FILE."""
-        if not os.path.exists(ACCOUNT_FILE):
-            print(f"File '{ACCOUNT_FILE}' not found.  Aborting.")
-            sys.exit(1)
-        file_content = Path(ACCOUNT_FILE).read_text(encoding="utf-8")
-        pattern = r".*?\scrcns_username='(.*)'.*?\scrcns_password='(.*)'"
-        match = re.search(pattern, file_content, re.DOTALL)
-        if match:
-            self.username = match.group(1)
-            self.password = match.group(2)
-        if not self.username or not self.password:
-            print(f"Unable to find non-empty username and password in file '{ACCOUNT_FILE}'.")
-            print(f"Suggestion: edit file '{ACCOUNT_FILE}' to include your CRCNS.org account information.")
-            print("Aborting.")
-            sys.exit(1)
+    # def load_account_info(self):
+    #     """Load account information from ACCOUNT_FILE."""
+    #     if not os.path.exists(ACCOUNT_FILE):
+    #         print(f"File '{ACCOUNT_FILE}' not found.  Aborting.")
+    #         sys.exit(1)
+    #     file_content = Path(ACCOUNT_FILE).read_text(encoding="utf-8")
+    #     pattern = r".*?\scrcns_username='(.*)'.*?\scrcns_password='(.*)'"
+    #     match = re.search(pattern, file_content, re.DOTALL)
+    #     if match:
+    #         self.username = match.group(1)
+    #         self.password = match.group(2)
+    #     if not self.username or not self.password:
+    #         print(f"Unable to find non-empty username and password in file '{ACCOUNT_FILE}'.")
+    #         print(f"Suggestion: edit file '{ACCOUNT_FILE}' to include your CRCNS.org account information.")
+    #         print("Aborting.")
+    #         sys.exit(1)
 
     def attempt_login(self):
         # following found from submitted request (viewed in crome developer tools):
@@ -240,16 +247,16 @@ class Dataset_downloader:
         url = f"{download_url_base}/{self.index_file}"
         output_filename = self.index_file
         self.requester.download_large_file(url, output_filename)
-        print("\n" + "="*50 + "\n"
-            "ℹ️  DATASET INITIALIZED SUCCESSFULLY\n"
-            "="*50 + "\n"
-            f"1. Open the file: {self.index_file}\n"
-            "2. Follow instructions at the top to edit the file and specify which files to download\n"
+        print("\n" + "="*50)
+        print("ℹ️  DATASET INITIALIZED SUCCESSFULLY")
+        print("="*50)
+        print(f"1. Open the file: {self.index_file}\n"
+            "2. Follow instructions at the top to edit the file and specify which files to download:\n"
             "   - With mode 'default' put a '#' in front of files to NOT be downloaded. "
-            " (All the others WILL be downloaded)\n"
-            "   - With mode '+', put a '+' in front of files to downloaded. (The others will NOT be downloaded.\n"
-            f"3. Run 'python downloader.py {self.dsid}' again to start.\n"
-            "="*50 + "\n")
+            " (All the others WILL be downloaded.)\n"
+            "   - With mode '+', put a '+' in front of files to downloaded. (The other files will NOT be downloaded.)\n"
+            f"3. Run 'python downloader.py {self.dsid}' again to start.")
+        print("="*50)
         # print(f"Just downloaded '{self.index_file}'.  Edit the file to indicate which files "
         #     "should be downloaded, then rerun this script in order to download those files")
         exit(0)
@@ -290,20 +297,20 @@ class Dataset_downloader:
                         # need to download this file
                         # line will be like:
                         # ec013.528/ec013.528.mpg.tar.gz    327392489 (312.2 MB)
-                        file_line_pattern = r"^[ \+]\s*([^\ ]*)\s(\d+)\s*\(([\.\d]+) (\w+)\)"
+                        file_line_pattern = r"^[ \+]\s*([^\ ]*)\s(\d+)(?:\s*\(([\.\d]+) (\w+)\))?"
                         match = re.search(file_line_pattern, line)
                         if match:
                             file_name = match.group(1)
-                            file_size = match.group(2)
+                            file_size = int(match.group(2))
                             file_hsize = match.group(3)
                             file_hsize_unit = match.group(4)
+                            # ignore file_hsize and file_hsize_unit because they might not be present
                             # set file_source to None if matches default (first entry in options["source"]), e.g. 'aws'
                             file_source = None if specified["source"] == options["source"][0] else specified["source"]
-                            self.filelist.append([file_name, int(file_size), file_hsize, file_hsize_unit,
-                                specified["source"]])
+                            self.filelist.append([file_name, file_size, specified["source"]])
                         else:
                             print(f"Line {line_number} specifying file to download in file '{self.index_file} "
-                                "did not match expected pattern.  Expecting <file_name> <size> (<hsize> <hunit>)\n"
+                                "did not match expected pattern.  Expecting <file_name> <size> [(<hsize> <hunit>)]\n"
                                 f"Line is:\n{line}\nAborting.")
                             sys.exit(1)
                     elif not (first_char == "#" or (first_char == " " and specified["mode"] == "+")):
@@ -344,9 +351,10 @@ class Dataset_downloader:
         print( "Would download files:" if step_show_info else "Downloading files:")
         print("Name\tSize")
         for file_info in self.filelist:
-            file_name, file_size, file_hsize, file_hsize_unit, source = file_info
+            file_name, file_size, source = file_info
             full_path=f"{self.dsid}/{file_name}"
-            print(f"{full_path}\t{file_size} ({file_hsize} {file_hsize_unit})", end="")
+            size_human = format_bytes(file_size)
+            print(f"{full_path}\t{file_size} ({size_human})", end="")
             if os.path.exists(full_path):
                 current_size = os.path.getsize(full_path)
                 bytes_needed= file_size - current_size
@@ -397,8 +405,12 @@ def format_bytes(size_in_bytes: int) -> str:
     i = min(i, len(units) - 1)
     
     # Calculate the scaled size
-    p = math.pow(1024, i)
-    scaled_size = round(size_in_bytes / p, 2)
+    if i == 0:
+        # less than 1k bytes, don't round
+        scaled_size = size_in_bytes
+    else:
+        p = math.pow(1024, i)
+        scaled_size = round(size_in_bytes / p, 2)
     
     return f"{scaled_size} {units[i]}"
 
@@ -422,6 +434,155 @@ def get_valid_input(prompt, valid_choices, case_sensitive=False):
         print(f"Invalid choice! Please choose from: {', '.join(map(str, valid_choices))}\n")
 
 
+class UserInputParser:
+    """
+    Handles all argument parsing, and resolves repository credentials and
+    dataset ID from multiple sources in priority order:
+      1. Command-line arguments  (--username, --password, dataset_id)
+      2. Environment variables   (REPO_USERNAME, REPO_PASSWORD)
+      3. Config file             (default: crcns-account.txt)
+      4. Interactive prompt
+    """
+
+    DEFAULT_CONFIG_FILE = Path("crcns-account.txt")
+    ENV_USERNAME = "CRCNS_USERNAME"
+    ENV_PASSWORD = "CRCNS_PASSWORD"
+
+    def __init__(self):
+        self.username = None
+        self.password = None
+        self.dataset_id = None
+        self.config_file = self.DEFAULT_CONFIG_FILE
+        self.parse_and_resolve()
+
+    def parse_and_resolve(self):
+        """
+        Parse command-line arguments, then resolve all inputs (credentials
+        and dataset ID) using the priority chain.  Returns self for chaining.
+        """
+        self._parse_args()
+        self._apply_env_vars()
+        self._apply_account_file()
+        self._prompt_if_missing()
+        return self
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    def _parse_args(self):
+        """Define and parse command-line arguments, seeding instance variables."""
+        parser = argparse.ArgumentParser(
+            description="Batch download data files from CRCNS.org.",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog=f"""
+Credential resolution order (highest to lowest priority):
+  1. --username / --password flags
+  2. CRCNS_USERNAME / CRCNS_PASSWORD environment variables
+  3. account-info.ini config file
+  4. Interactive prompt
+
+Examples:
+  # Use config file for credentials, specify dataset (example: 'pvc-1') on command line:
+  python {script_name} pvc-1
+
+  # Specify username on command line, get prompted for password:
+  python {script_name} --username myname pvc-1
+
+  # Fully non-interactive (e.g. for automation):
+  python {script_name} --username myname --password secret pvc-1
+  CRCNS_USERNAME=myname CRCNS_PASSWORD=secret python {script_name} pvc-1
+            """,
+        )
+        parser.add_argument(
+            "dataset_id",
+            nargs="?",
+            default=None,
+            help="ID of the dataset to download (examples: `pvc-1`, `hc-2`",
+        )
+        parser.add_argument(
+            "--username", "-u",
+            help="CRCNS.org username (overrides config file and env var)",
+        )
+        parser.add_argument(
+            "--password", "-p",
+            help="CRCNS.org password (if omitted, will prompt securely)",
+        )
+        parser.add_argument(
+            "--config", "-c",
+            default=None,
+            help=f"Path to credentials config file (default: {self.DEFAULT_CONFIG_FILE})",
+        )
+
+        args = parser.parse_args()
+        self.username = args.username
+        self.password = args.password
+        self.dataset_id = args.dataset_id
+        account_file = args.config if args.config else ACCOUNT_FILE
+        self.account_file = Path(account_file)
+
+    def _apply_env_vars(self):
+        """Fill any missing credentials from environment variables."""
+        if not self.username:
+            self.username = os.environ.get(self.ENV_USERNAME)
+        if not self.password:
+            self.password = os.environ.get(self.ENV_PASSWORD)
+
+    def _apply_account_file(self):
+        """Fill any missing credentials from the ACCOUNT_FILE file."""
+        if self.username and self.password:
+            return  # nothing to do
+
+        if not self.account_file.exists():
+            return
+
+        # self._check_file_permissions()  # don't bother with this
+
+        """Load account information from ACCOUNT_FILE."""
+        file_content = self.account_file.read_text(encoding="utf-8")
+        pattern = r".*?\scrcns_username='(.*)'.*?\scrcns_password='(.*)'"
+        match = re.search(pattern, file_content, re.DOTALL)
+        if match:
+            username = match.group(1)
+            password = match.group(2)
+            if not username or not password:
+                print(f"Unable to find non-empty username and password in file '{ACCOUNT_FILE}'.\n"
+                    f"Suggestion: edit file '{ACCOUNT_FILE}' to include your CRCNS.org account information.\n"
+                    "Aborting.")
+                sys.exit(1)
+            if not self.username:
+                self.username = username
+            if not self.password:
+                self.password = password
+
+    def _prompt_until_given(self, prompt, password=False):
+        """Prompt repeatedly until the user enters a non-empty value."""
+        while True:
+            value = input(prompt).strip() if not password else getpass.getpass(prompt)
+            if value.strip():   # strip again to make sure password is not all spaces
+                return value
+            print(f"  {prompt.strip()} cannot be empty. Please try again.")
+
+    def _prompt_if_missing(self):
+        """Interactively prompt for any inputs that are still missing."""
+        if not self.username:
+            self.username = self._prompt_until_given("Username: ")
+        if not self.password:
+            self.password = self._prompt_until_given("Password: ", password=True)  # input is hidden
+        if not self.dataset_id:
+            self.dataset_id = self._prompt_until_given("Dataset ID (example 'pvc-1'): ")
+
+    def _check_file_permissions(self):
+        """Warn if the config file is readable by group or others."""
+        mode = self.config_file.stat().st_mode
+        if mode & stat.S_IRGRP or mode & stat.S_IROTH:
+            print(
+                f"Warning: {self.config_file} is readable by others. "
+                f"Run: chmod 600 {self.config_file}"
+            )
+
+
+"""
 import argparse
 import sys
 
@@ -469,18 +630,20 @@ def get_dsid():
                 break
     print ("Downloading for dataset '{dsid}")
     return dsid
+"""
+
 
 def main():
-    dsid = get_dsid()
+    ui = UserInputParser()
     requester = Requester()
-    login = Login_crcns(requester, dsid)
+    login = Login_crcns(requester, ui.dataset_id, ui.username, ui.password)
     if not login.authorized:
         print(f"Unable to login to {login_page}.  Check file '{ACCOUNT_FILE} "
             " to be sure it has the correct values for your {} account.")
     status_message = "login authorized" if login.authorized else "login NOT authorized"
     method_message = login.method
     print(f"status is '{status_message}', method is '{method_message}'")
-    downloader = Dataset_downloader(requester, dsid)
+    downloader = Dataset_downloader(requester, ui.dataset_id)
     print("all done")
 
 
