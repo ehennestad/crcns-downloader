@@ -384,16 +384,22 @@ class Dataset_downloader:
         if len(self.filelist) == 0:
             print("No files specified for downloading.\nAborting.")
             sys.exit(1)
+        longest_name_width = max(len(str(item[0])) for item in self.filelist) + len(self.dsid) + 2
+        byte_size_width = 12
+        human_size_width = 8
+        total_width = longest_name_width + byte_size_width + human_size_width + 4
         download_count=0
         total_bytes=0
         line_count=0
         print( "Would download files:" if step_show_info else "Downloading files:")
-        print("Name\tSize")
+        print(f"{'Name':<{longest_name_width}}  {'Size':<{byte_size_width}}  {'HSize':<{human_size_width}}")
+        print("-"*total_width)
         for file_info in self.filelist:
             file_name, file_size, source = file_info
             full_path=f"{self.dsid}/{file_name}"
             size_human = format_bytes(file_size)
-            print(f"{full_path}\t{file_size} ({size_human})", end="")
+            print(f"{full_path:<{longest_name_width}}  {file_size:<{byte_size_width}}  "
+                f"{size_human:>{human_size_width}}", end="")
             if os.path.exists(full_path):
                 current_size = os.path.getsize(full_path)
                 bytes_needed= file_size - current_size
