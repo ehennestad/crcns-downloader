@@ -29,7 +29,7 @@ apache_alias = "d"  # used to specify page (script) for downloading data
 download_url_base = f"{site_url}/{apache_alias}/"
 login_page=f"{site_url}/login_form"
 logout_page=f"{site_url}/logout"
-script_name = {os.path.basename(__file__)}
+script_name = os.path.basename(__file__)
 
 # dsid = "hc-2"
 
@@ -80,6 +80,13 @@ class Requester:
     def save_cookies(self):
         """Saves current cookie state to disk."""
         self.cookie_jar.save(ignore_discard=True, ignore_expires=True)
+
+    def get_cookie_value(self, cookie_name):
+        """Returns the value assigned to a cookie, or None"""
+        for cookie in self.cookie_jar:
+            if cookie.name == cookie_name:
+                return cookie.value
+        return None
 
 
     def download_large_file(self, url, output_filename):
@@ -157,25 +164,34 @@ with open(output_file, 'w') as file:
 
 class Login_crcns:
 
-    def __init__(self, requester, dsid, username, password):
+    def __init__(self, requester, dsid, username, password, logout):
         # requester - Requester object
         # dsid - dataset id, something like 'hc-3'
+        # logout - true if user is requesting logging out
         self.requester = requester
         self.dsid = dsid
         self.username = username
         self.password = password
+        if logout:
+            self.do_logout()
         self.authorized = self.check_access(dsid)
         if self.authorized:
-            self.method = "already logged in (from cookie)"
+            self.method = "using previous session (saved cookie)"
         else:
-            self.method = "new login"
+            self.method = "by starting new session"
             # self.load_account_info()
             self.authorized = self.attempt_login()
+            if self.authorized:
+               self.authorized = self.check_access(dsid)
         if not self.authorized:
-            print(f"Unable to login user '{username}' to {login_page}.  Check file '{ACCOUNT_FILE}' "
-            " or other method used to specify the username and pasword.\nAborting.")
-            sys.exit(0)
+            sys.exit(f"Unable to login user '{username}' to {login_page} for dataset {dsid}.\n"
+            f"Check file '{ACCOUNT_FILE}'.")
         
+    def do_logout(self):
+        url = logout_page
+        html = self.requester.fetch_small(url)
+        print("You are now logged out of CRCNS.org")
+        sys.exit(0)
 
     def check_access(self, dsid):
         url = f"{download_url_base}/{dsid}"
@@ -187,11 +203,26 @@ class Login_crcns:
             # Found 'Login required'"
             authorized = False
         else:
-            match = re.search("Logged in as", clean_text, re.IGNORECASE)
+            # Logged in as jteeters (Jeff Teeters). logout.
+            match = re.search(r"Logged in as\s+([^\s]+)\s+\(([^\)]*)\)", clean_text, re.IGNORECASE)
             if match:
                 authorized = True
+                self.html_returned_username = match.group(1)
+                self.html_returned_full_name = match.group(2)
+                # make sure logged in using username in file crcns-account.txt
+                if self.html_returned_username != self.username:
+                    sys.exit(f"** Changed username detected **\n"
+                        f"Was loged in as user '{self.html_returned_username}'\n"
+                        f"but file {ACCOUNT_FILE} specifies user '{self.username}'\n"
+                        f"To correct, logout via 'python {script_name} --logout', then run command again")
             else:
                 authorized = False
+            # could extract username from cookie, but instead use username and full_name returned by match above
+            # cookie_value = self.requester.get_cookie_value("__ac")
+            # print(f"in check_access; cookie_value='{cookie_value}'\nclean_text=\n{clean_text}\n"
+            #     f"first_line={first_line}\n"
+            #     f"html_returned_username='{html_returned_username}', "
+            #     f"html_returned_full_name='{html_returned_full_name}'")
         return authorized
 
     # def load_account_info(self):
@@ -438,6 +469,84 @@ def get_valid_input(prompt, valid_choices, case_sensitive=False):
 
 class UserInputParser:
     """
+    Loads command line arguments and contents of crcns-account.txt file (username and password).
+    Values loaded stored in instance variables:
+      - dsid   - Dataset ID or None (if not specified on command line)
+      - logout - set to True if command line argument -l or --logout specified
+      - username - username loaded from file 'crcns-account.txt'
+      - password - password loaded from file 'crcns-account.txt'
+    """
+
+
+    def __init__(self):
+        self._parse_args()
+        self._parse_account_file()
+ 
+
+    def _parse_args(self):
+        """Define and parse command-line arguments, seeding instance variables."""
+        parser = argparse.ArgumentParser(
+            description="Batch download data files from CRCNS.org.",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog=f"""
+Example
+  # specify dataset (example: 'pvc-1') on command line:
+  python {script_name} pvc-1
+""",
+        )
+        parser.add_argument(
+            "dataset_id",
+            nargs="?",
+            default=None,
+            help="ID of the dataset to download (examples: `pvc-1`, `hc-2`",
+        )
+        parser.add_argument(
+            "--logout", "-l",
+            action="store_true",
+            help=f"Logout of CRCNS.org (so will start a new session on next run)",
+        )
+
+        args = parser.parse_args()
+        self.dsid = args.dataset_id
+        self.logout = args.logout
+        # if logout, don't require dsid
+        if self.logout:
+            return
+        # make sure dsid provided
+        if not self.dsid:
+            self.dsid = self._prompt_until_given("Dataset ID (example 'pvc-1'): ")
+
+    def _prompt_until_given(self, prompt):
+        """Prompt repeatedly until the user enters a non-empty value."""
+        while True:
+            value = input(prompt).strip()
+            if value:   # strip again to make sure password is not all spaces
+                return value
+            print(f"  Value cannot be empty. Please try again.")
+
+    def _parse_account_file(self):
+        """Load account information from ACCOUNT_FILE."""
+        account_file = Path(ACCOUNT_FILE)
+        if not account_file.exists():
+            sys.exit(f"File '{ACCOUNT_FILE}' not found.\nAborting.")
+        file_content = account_file.read_text(encoding="utf-8")
+        pattern = r".*?\scrcns_username='(.*)'.*?\scrcns_password='(.*)'"
+        match = re.search(pattern, file_content, re.DOTALL)
+        if match:
+            self.username = match.group(1)
+            self.password = match.group(2)
+            if not self.username or not self.password:
+                sys.exit(f"Error: unable to find non-empty username and password in file '{ACCOUNT_FILE}'.\n"
+                    f"Suggestion: edit file '{ACCOUNT_FILE}' to include your CRCNS.org account information.\n")
+                sys.exit(1)
+        else:
+            sys.exit(f"Error: Unable to find:\n# username='<username>'\n"
+                f"# password='<password>'\nin file '{ACCOUNT_FILE}.")
+
+
+
+class UserInputParser_notUsed:  ## complex, no longer used.  Will probably be removed
+    """
     Handles all argument parsing, and resolves repository credentials and
     dataset ID from multiple sources in priority order:
       1. Command-line arguments  (--username, --password, dataset_id)
@@ -654,16 +763,9 @@ def get_dsid():
 def main():
     ui = UserInputParser()
     requester = Requester()
-    if ui.logout:
-        do_logout(requester)
-    login = Login_crcns(requester, ui.dataset_id, ui.username, ui.password)
-    if not login.authorized:
-        print(f"Unable to login to {login_page}.  Check file '{ACCOUNT_FILE} "
-            " to be sure it has the correct values for your {} account.")
-    status_message = f"Username '{ui.username}' logged in" if login.authorized else "Login NOT authorized"
-    method_message = login.method
-    print(f"{status_message}. Method: {method_message}.")
-    downloader = Dataset_downloader(requester, ui.dataset_id)
+    login = Login_crcns(requester, ui.dsid, ui.username, ui.password, ui.logout)
+    print(f"Username '{ui.username}' ({login.html_returned_full_name}) logged in {login.method}.")
+    downloader = Dataset_downloader(requester, ui.dsid)
     print("all done")
 
 
