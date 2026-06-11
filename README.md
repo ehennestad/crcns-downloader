@@ -21,7 +21,11 @@ A pair of lightweight, zero-dependency Python command-line scripts to batch down
 ---
 
 ## 🚀 Initial Setup
-Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and then edit that file to specify the account at CRCNS.org used to download the data.  If you don't have an account you can create one for free.
+Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and then edit that file to specify the username and password for the account at CRCNS.org used to download the data.  If you don't have an account you can create one for free.
+
+*(Note: Instead of using the `crcns-account.txt` file to specify the username and password, you can also specify them 
+in three other ways: on the command-line; using environment variables; or when prompted by the script.  Run the script with the `-h` or `--help` option to see a summary of these option, or view the details below.)*
+
 ## 🚀 How to use the scripts (Step-by-Step)
 Downloading and verifying the files in a dataset involves an initialization phase, a quick file configuration step, and the final download/validation execution.
 ### Step 1: Initialize the Dataset
@@ -32,7 +36,7 @@ python crcns-downloader.py DATASET_ID
 Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or `hc-2`).
 
 **What happens next:**
-1. The script creates a local folder named the dataset_ID.
+1. The script creates a local folder named the DATASET_ID.
 2. It downloads two configuration files into that folder: `filelist.txt` and `checksums.md5`.3. The script prints instructions to your terminal and exits.
 ---
 ### Step 2: Select Your Files
@@ -62,7 +66,7 @@ Use this mode if you only want to download a **few** specific files from a datas
  data_file_03.csv   <-- Will be SKIPPED
 ```
 
-*(Advanced: You can use multiple `# mode='...'` lines throughout the file to switch selection modes mid-list).*
+*(Advanced: You can use multiple `# mode='...'` lines throughout the file to switch selection modes mid-list.)*
 ---
 ### Step 3: Execute the DownloadRun the exact same command a second time. The script reads your customized `filelist.txt` and downloads your selected files.
 ```bash

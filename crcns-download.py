@@ -166,14 +166,15 @@ class Login_crcns:
         self.password = password
         self.authorized = self.check_access(dsid)
         if self.authorized:
-            self.method = "already authorized (from cookie)"
+            self.method = "already logged in (from cookie)"
         else:
-            self.method = "attempted login"
+            self.method = "new login"
             # self.load_account_info()
             self.authorized = self.attempt_login()
         if not self.authorized:
-            print(f"Unable to login to {login_page}.  Check file '{ACCOUNT_FILE} "
-            " to be sure it has the correct values for your {} account.")
+            print(f"Unable to login user '{username}' to {login_page}.  Check file '{ACCOUNT_FILE}' "
+            " or other method used to specify the username and pasword.\nAborting.")
+            sys.exit(0)
         
 
     def check_access(self, dsid):
@@ -592,6 +593,12 @@ Examples:
                 f"Run: chmod 600 {self.config_file}"
             )
 
+def do_logout(requester):
+    url = logout_page
+    html = requester.fetch_small(url)
+    print("You are now logged out of CRCNS.org")
+    sys.exit(1)
+
 
 """
 import argparse
@@ -648,14 +655,14 @@ def main():
     ui = UserInputParser()
     requester = Requester()
     if ui.logout:
-        print("Found logout again")
+        do_logout(requester)
     login = Login_crcns(requester, ui.dataset_id, ui.username, ui.password)
     if not login.authorized:
         print(f"Unable to login to {login_page}.  Check file '{ACCOUNT_FILE} "
             " to be sure it has the correct values for your {} account.")
-    status_message = "login authorized" if login.authorized else "login NOT authorized"
+    status_message = f"Username '{ui.username}' logged in" if login.authorized else "Login NOT authorized"
     method_message = login.method
-    print(f"status is '{status_message}', method is '{method_message}'")
+    print(f"{status_message}. Method: {method_message}.")
     downloader = Dataset_downloader(requester, ui.dataset_id)
     print("all done")
 
