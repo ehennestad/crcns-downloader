@@ -24,7 +24,10 @@ A pair of lightweight, zero-dependency Python command-line scripts to batch down
 Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and then edit that file to specify the username and password for the account at CRCNS.org used to download the data.  If you don't have an account you can create one for free.
 
 *(Note: Instead of using the `crcns-account.txt` file to specify the username and password, you can also specify them 
-in three other ways: on the command-line; using environment variables; or when prompted by the script.  Run the script with the `-h` or `--help` option to see a summary of these option, or view the details below.)*
+in three other ways: on the command-line; using environment variables; or when prompted by the script.  Run the script with the `-h` or `--help` option to see a summary of these option, or view the 
+[details below](#details-about-alternate-ways-of-specifying-account-information).
+
+)*
 
 ## 🚀 How to use the scripts (Step-by-Step)
 Downloading and verifying the files in a dataset involves an initialization phase, a quick file configuration step, and the final download/validation execution.
@@ -66,9 +69,10 @@ Use this mode if you only want to download a **few** specific files from a datas
  data_file_03.csv   <-- Will be SKIPPED
 ```
 
-*(Advanced: You can use multiple `# mode='...'` lines throughout the file to switch selection modes mid-list.)*
+* *(Advanced: You can use multiple `# mode='...'` lines throughout the file to switch selection modes mid-list.)*
 ---
-### Step 3: Execute the DownloadRun the exact same command a second time. The script reads your customized `filelist.txt` and downloads your selected files.
+### Step 3: Execute the Download
+Run the exact same command a second time. The script reads your customized `filelist.txt` and displays the list of files to be downloaded and the total size and prompts you to confirm to proceed.  If you conferm, the script downloads your selected files.
 ```bash
 python downloader.py DATASET_ID
 ```
@@ -87,5 +91,97 @@ Contributions, bug reports, and feature suggestions are welcome! 1. Fork the rep
 ---## 📄 License
 Distributed under the MIT License. See the `LICENSE` file in this repository for more details.
 
+
+## Details about alternate ways of specifying account information
+
+The script supports three ways to supply your username and password. Choose whichever suits your workflow. If credentials are provided through more than one method, see [Credential Resolution Order](#credential-resolution-order) for which takes precedence.
+
+---
+
+### Option 1: `crcns-account.txt` File (Recommended for Regular Use)
+
+This option was [described above](#initial-setup).
+
+
+> **Security:** On macOS/Linux, restrict the file so only you can read it:
+> ```bash
+> chmod 600 crcns-account.ini
+> ```
+> The script will warn you if the file is readable by other users on the system.
+
+> **Note:** `account-info.ini` is listed in `.gitignore` and will not be committed to the repository. Never commit your credentials.
+
+---
+
+### Option 2: Environment Variables
+
+Set the following environment variables before running the script:
+
+| Variable         | Description        |
+|------------------|--------------------|
+| `REPO_USERNAME`  | Your username      |
+| `REPO_PASSWORD`  | Your password      |
+
+**Setting them for a single run:**
+
+```bash
+REPO_USERNAME=myname REPO_PASSWORD=mysecret python download.py DATASET123
+```
+
+**Setting them for the current shell session:**
+
+```bash
+export REPO_USERNAME=myname
+export REPO_PASSWORD=mysecret
+python download.py DATASET123
+```
+
+**In a CI/CD pipeline**, set these as secret environment variables in your pipeline configuration (e.g. GitHub Actions Secrets, GitLab CI Variables).
+
+---
+
+### Option 3: Command-Line Arguments
+
+Pass credentials directly as flags. This is useful for one-off runs or testing.
+
+Specify both username and password:
+
+```bash
+python download.py --username myname --password mysecret DATASET123
+```
+
+Specify only the username; the script will prompt for the password securely (input is hidden):
+
+```bash
+python download.py --username myname DATASET123
+Password:
+```
+
+> **Note:** Passing `--password` on the command line may expose your password in your shell history. When possible, omit `--password` and let the script prompt you for it.
+
+---
+
+
+## Credential Resolution Order
+
+When credentials are available from more than one source, the script uses the following priority order (highest to lowest):
+
+| Priority | Source                        |
+|----------|-------------------------------|
+| 1        | `--username` / `--password` command-line flags |
+| 2        | `REPO_USERNAME` / `REPO_PASSWORD` environment variables |
+| 3        | `account-info.ini` config file |
+| 4        | Interactive prompt             |
+
+This means, for example, that setting `--username` on the command line will override the username in your config file, while still using the password from the config file.
+
+---
+
+## Security Notes
+
+- **Never commit credentials** to version control. The `account-info.ini` file is included in `.gitignore` for this reason.
+- **Use `chmod 600 account-info.ini`** on macOS/Linux to ensure only your user account can read the file.
+- **Avoid `--password` in shell commands** that will be logged in your shell history. Use the interactive prompt or environment variables instead.
+- For automated pipelines, use your platform's secrets management (GitHub Actions Secrets, environment variable injection, etc.) rather than storing credentials in files.
 
 
