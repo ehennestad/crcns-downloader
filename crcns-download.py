@@ -203,6 +203,12 @@ class Login_crcns:
             # Found 'Login required'"
             authorized = False
         else:
+            # check for invalid dataset identifier
+            match = re.search(r"Invalid data set identifier:\s+([^\s]*)", first_line)
+            if match:
+                html_dsid = match.group(1)
+                id_unexpected = "" if html_dsid == dsid else f" (Unexpected: does not match entered id '{dsid}'"
+                sys.exit(first_line + id_unexpected)
             # Logged in as jteeters (Jeff Teeters). logout.
             match = re.search(r"Logged in as\s+([^\s]+)\s+\(([^\)]*)\)", clean_text, re.IGNORECASE)
             if match:
