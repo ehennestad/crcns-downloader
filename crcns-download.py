@@ -30,6 +30,7 @@ download_url_base = f"{site_url}/{apache_alias}/"
 login_page=f"{site_url}/login_form"
 logout_page=f"{site_url}/logout"
 script_name = os.path.basename(__file__)
+source_cookie_name="crcns-data-source"
 
 # dsid = "hc-2"
 
@@ -37,8 +38,19 @@ script_name = os.path.basename(__file__)
 class Requester:
     # requests page or download file
 
-    def __init__(self):
+    def __init__(self, new_data_source):
         self.cookie_jar = http.cookiejar.MozillaCookieJar(COOKIE_FILE)
+        if os.path.exists(COOKIE_FILE):
+            try:
+                # Load saved cookies, ignoring expired or session-only flags if needed
+                self.cookie_jar.load(ignore_discard=True, ignore_expires=True)
+                # print("Successfully loaded existing cookies.")
+            except Exception as e:
+                pass
+                # print(f"Could not load cookie file: {e}")
+        # else:
+            # print("No saved cookies found. Starting a fresh session.")
+        self.save_data_source(new_data_source)
         self.cookie_handler = urllib.request.HTTPCookieProcessor(self.cookie_jar)
         self.redirect_handler = urllib.request.HTTPRedirectHandler()
         # Create the UNIVERSAL opener
@@ -52,16 +64,6 @@ class Requester:
     def fetch_small(self, url, form_vars=None):
         # fetch what should be a small response
         # if given, form_vars is a dictionary of key-value pairs used to make a post request
-        if os.path.exists(COOKIE_FILE):
-            try:
-                # Load saved cookies, ignoring expired or session-only flags if needed
-                self.cookie_jar.load(ignore_discard=True, ignore_expires=True)
-                # print("Successfully loaded existing cookies.")
-            except Exception as e:
-                pass
-                # print(f"Could not load cookie file: {e}")
-        # else:
-            # print("No saved cookies found. Starting a fresh session.")
         try:
             # 6. Make the request using the custom opener (instead of urllib.request.urlopen)
             post_data = urllib.parse.urlencode(form_vars).encode('utf-8') if form_vars else None
@@ -77,17 +79,52 @@ class Requester:
             print(f"HTTP Request failed: {e.reason}")
         return (html, status_code)
 
+    def save_data_source(self, new_data_source):
+        """ data source is the server (AWS, NERSC, HPSS) to fetch the data from
+        Currently not implemented on the server, but code added so in in the future
+        data could be downloaded from multiple sources."""
+        print(f"new_data_source={new_data_source}")
+        if(new_data_source is None):
+            # don't set the source if nothing specified
+            return None
+        previous_data_source = self.get_cookie_value(source_cookie_name, site_name)
+        print(f"previous_data_source={previous_data_source}\n")
+        if(previous_data_source != new_data_source):
+            print(f"adding cookie name={source_cookie_name}, value={new_data_source}, site_name={site_name}\n")
+            self.add_cookie(source_cookie_name, new_data_source, site_name)
+
     def save_cookies(self):
         """Saves current cookie state to disk."""
         self.cookie_jar.save(ignore_discard=True, ignore_expires=True)
 
-    def get_cookie_value(self, cookie_name):
+    def get_cookie_value(self, cookie_name, domain):
         """Returns the value assigned to a cookie, or None"""
         for cookie in self.cookie_jar:
-            if cookie.name == cookie_name:
+            if cookie.name == cookie_name and cookie.domain == domain:
                 return cookie.value
         return None
 
+    def add_cookie(self, name, value, domain, path='/', secure=False):
+        """Add a custom cookie to the cookie jar."""
+        cookie = http.cookiejar.Cookie(
+            version=0,
+            name=name,
+            value=value,
+            port=None,
+            port_specified=False,
+            domain=domain,
+            domain_specified=True,
+            domain_initial_dot=domain.startswith('.'),
+            path=path,
+            path_specified=True,
+            secure=secure,
+            expires=None,        # None = session cookie
+            discard=True,
+            comment=None,
+            comment_url=None,
+            rest={}
+        )
+        self.cookie_jar.set_cookie(cookie)
 
     def download_large_file(self, url, output_filename):
         """ Streams large content to disk using Range headers and the same opener."""
@@ -490,10 +527,17 @@ Example
             help=f"Logout of CRCNS.org (so will start a new session on next run)",
         )
 
+        parser.add_argument(
+            "--source", "-s",
+            type=str,
+            help=f"Source of data.  Currently not used.  Placeholder for future implementation",
+        )
+
         args = parser.parse_args()
         self.dsid = args.dataset_id
         self.logout = args.logout
-        # if logout, don't require dsid
+        self.data_source = args.source
+        # if logout specified don't require dsid
         if self.logout:
             return
         # make sure dsid provided
@@ -530,7 +574,7 @@ Example
 
 def main():
     ui = UserInputParser()
-    requester = Requester()
+    requester = Requester(ui.data_source)
     login = Login_crcns(requester, ui.dsid, ui.username, ui.password, ui.logout)
     print(f"Username '{ui.username}' ({login.html_returned_full_name}) logged in {login.method}.")
     downloader = Dataset_downloader(requester, ui.dsid)
