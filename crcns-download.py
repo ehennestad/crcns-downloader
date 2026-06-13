@@ -83,14 +83,19 @@ class Requester:
         """ data source is the server (AWS, NERSC, HPSS) to fetch the data from
         Currently not implemented on the server, but code added so in in the future
         data could be downloaded from multiple sources."""
-        print(f"new_data_source={new_data_source}")
+        # print(f"new_data_source={new_data_source}")
+        previous_data_source = self.get_cookie_value(source_cookie_name, site_name)
         if(new_data_source is None):
+            if(previous_data_source is not None):
+                print(f"Datasource is '{previous_data_source}'.")
             # don't set the source if nothing specified
             return None
-        previous_data_source = self.get_cookie_value(source_cookie_name, site_name)
-        print(f"previous_data_source={previous_data_source}\n")
         if(previous_data_source != new_data_source):
-            print(f"adding cookie name={source_cookie_name}, value={new_data_source}, site_name={site_name}\n")
+            if (previous_data_source is None):
+                print(f"Data source set to '{new_data_source}'.")
+            else:
+                print(f"Data source changed from '{previous_data_source}' to '{new_data_source}'.")
+            # print(f"adding cookie name={source_cookie_name}, value={new_data_source}, site_name={site_name}\n")
             self.add_cookie(source_cookie_name, new_data_source, site_name)
 
     def save_cookies(self):
@@ -232,11 +237,15 @@ class Login_crcns:
             authorized = False
         else:
             # check for invalid dataset identifier
-            match = re.search(r"Invalid data set identifier:\s+([^\s]*)", first_line)
+            match = re.search(r"Invalid data set identifier:", first_line, re.IGNORECASE)
             if match:
                 html_dsid = match.group(1)
                 id_unexpected = "" if html_dsid == dsid else f" (Unexpected: does not match entered id '{dsid}'"
                 sys.exit(first_line + id_unexpected)
+            # check for invalid data source specified (using --source option)
+            match = re.search(r"Invalid data source specified:\s+\.*", first_line, re.IGNORECASE)
+            if match:
+                sys.exit(clean_text)  # display full error message and exit
             # Logged in as jteeters (Jeff Teeters). logout.
             match = re.search(r"Logged in as\s+([^\s]+)\s+\(([^\)]*)\)", clean_text, re.IGNORECASE)
             if match:
