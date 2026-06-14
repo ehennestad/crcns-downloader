@@ -96,7 +96,11 @@ class Requester:
             else:
                 print(f"Data source changed from '{previous_data_source}' to '{new_data_source}'.")
             # print(f"adding cookie name={source_cookie_name}, value={new_data_source}, site_name={site_name}\n")
-            self.add_cookie(source_cookie_name, new_data_source, site_name)
+            if(new_data_source == ""):
+                # delete datasource cookie (setting to "" is way to remove it)
+                self.cookie_jar.clear(domain=site_name, path='/', name=source_cookie_name)
+            else:
+                self.add_cookie(source_cookie_name, new_data_source, site_name)
 
     def save_cookies(self):
         """Saves current cookie state to disk."""
