@@ -289,7 +289,6 @@ class Login_crcns:
         authorized = len(html) > 1000 and status_code == 200
         return authorized
 
-
 class Dataset_downloader:
 
     def __init__(self, requester, dsid):
@@ -418,6 +417,7 @@ class Dataset_downloader:
         print( "Would download files:" if step_show_info else "Downloading files:")
         print(f"{'Name':<{longest_name_width}}  {'Size':<{human_size_width}}")
         print("-"*total_width)
+        agent = 1;  # indicates this script (crcns-download.py)
         for file_info in self.filelist:
             file_name, file_size, source = file_info
             full_path=f"{self.dsid}/{file_name}"
@@ -438,7 +438,7 @@ class Dataset_downloader:
                 print("")
                 bytes_needed = file_size
             if step_download:
-                url = f"{download_url_base}/{full_path}" + ("" if source is None else "&" + source)
+                url = f"{download_url_base}/{full_path}&agent={agent}" + ("" if source is None else "&" + source)
                 output_filename = full_path
                 self.requester.download_large_file(url, output_filename)
             download_count += 1
@@ -532,7 +532,7 @@ Example
             "dataset_id",
             nargs="?",
             default=None,
-            help="ID of the dataset to download (examples: `pvc-1`, `hc-2`",
+            help="ID of the dataset to download (examples: `pvc-1`, `hc-2`): ",
         )
         parser.add_argument(
             "--logout", "-l",
