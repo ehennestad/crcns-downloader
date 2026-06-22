@@ -594,7 +594,7 @@ class UserInputParser:
         dataset_id = "dataset_id" if self.dataset_id_required else "[dataset_id]"
         id_description = "dataset_id        ID for the dataset to download (e.g. 'pvc-1')."
         usage = (f"%(prog)s {dataset_id} [-h] [-a ACCOuNT_FILE] [-d OUTPUT_DIR] "
-            "[-f PATH [PATH ...]] [--logout] [--source SOURCE]")
+            "[-p PATTERN [PATTERN ...]] [--logout] [--source SOURCE]")
 
         parser = argparse.ArgumentParser(
             description="Batch download data files from CRCNS.org.",
