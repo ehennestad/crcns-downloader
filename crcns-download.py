@@ -506,56 +506,147 @@ class UserInputParser:
     """
     Loads command line arguments and contents of crcns-account.txt file (username and password).
     Values loaded stored in instance variables:
-      - dsid   - Dataset ID or None (if not specified on command line)
+      - dsid   - Dataset ID (if not specified on command line will prompt user to enter)
       - logout - set to True if command line argument -l or --logout specified
       - username - username loaded from file 'crcns-account.txt'
       - password - password loaded from file 'crcns-account.txt'
+      - output_dir - base directory to create dataset id's inside.  Default is current working directory
+      - file_list - list of files to download.  If not specified 
     """
 
-    def __init__(self):
+    def __init__(self, dataset_id_required = True):
+        self.dataset_id_required = dataset_id_required
         self._parse_args()
+        # self._display_values()
         self._parse_account_file()
+        self._display_values()
+        sys.exit("done for now")
  
+
+    def _extract_leading_dataset_id(self, argv):
+        """
+        If argv's first token doesn't look like a flag, treat it as the
+        dataset id and remove it from argv. Returns (dataset_id_or_None, remaining_argv).
+        """
+        if argv and not argv[0].startswith("-"):
+            return argv[0], argv[1:]
+        return None, argv
+
 
     def _parse_args(self):
         """Define and parse command-line arguments, seeding instance variables."""
+
+        dataset_id = "dataset_id" if self.dataset_id_required else "[dataset_id]"
+        id_description = "dataset_id        ID for the dataset to download (e.g. 'pvc-1')."
+        usage = (f"%(prog)s {dataset_id} [-h] [-a ACCOuNT_FILE] [-d OUTPUT_DIR] "
+            "[-f PATH [PATH ...]] [--logout] [--source SOURCE]")
+
         parser = argparse.ArgumentParser(
             description="Batch download data files from CRCNS.org.",
+            usage=usage,
             formatter_class=argparse.RawDescriptionHelpFormatter,
-            epilog=f"""
-Example
-  # specify dataset (example: 'pvc-1') on command line:
-  python {script_name} pvc-1
-""",
-        )
+            epilog=(
+                "Example\n"
+                "  # specify dataset (example: 'pvc-1') on command line:\n"
+                f"  python {script_name} pvc-1"),
+            )
+
+        # Manually document dataset_id in its own group so it appears at the top
+        positional_group = parser.add_argument_group("positional arguments")
+        positional_group.description = id_description
+        # _action_groups order at this point:
+        #   [0] default "positional arguments" (empty, we're not using it)
+        #   [1] default "optional arguments"
+        #   [2] our custom group  <-- we want this at index 1
+        parser._action_groups.insert(1, parser._action_groups.pop(-1))
+
+        # Not positional -- we fill this in ourselves from the leading token.
+        # suppress so it doesn't show up twice in the auto-generated options list.
+        parser.add_argument("--id", dest="dataset_id", default=None, help=argparse.SUPPRESS)
+
         parser.add_argument(
-            "dataset_id",
-            nargs="?",
-            default=None,
-            help="ID of the dataset to download (examples: `pvc-1`, `hc-2`): ",
-        )
-        parser.add_argument(
-            "--logout", "-l",
-            action="store_true",
-            help=f"Logout of CRCNS.org (so will start a new session on next run)",
+            "-a", "--account-file",
+            type=Path,
+            default=Path.cwd() / "crcns-account.txt",
+            dest="account_file",
+            help="Path to the file containing account credentials (username and "
+                 "password). Defaults to 'crcns-account.txt' in the current "
+                 "working directory.",
         )
 
         parser.add_argument(
-            "--source", "-s",
+            "-d", "--dir",
+            type=Path,
+            default=Path.cwd(),
+            dest="output_dir",
+            help=(
+                "Directory in which the dataset's base directory (for example, 'pvc-1') will be created. "
+                "Defaults to the current working directory."
+            ),
+        )
+
+        parser.add_argument(
+            "-s", "--source",
             type=str,
-            help=f"Source of data.  Currently not used.  Placeholder for future implementation",
+            help=("Source of data.  Default is the currently recommended source. "
+                "Options may change.  Enter '-s help' to see current options."),
         )
 
-        args = parser.parse_args()
-        self.dsid = args.dataset_id
-        self.logout = args.logout
-        self.data_source = args.source
+        parser.add_argument(
+            "--logout",
+            action="store_true",
+            help=f"Logout of CRCNS.org (so will start a new session on next run).",
+        )
+
+        parser.add_argument(
+            "-f", "--files",
+            nargs="+",
+            metavar="PATH",
+            help=(
+                "One or more specific files to download, given as paths relative "
+                "to the dataset root (e.g. docs/readme.txt). If omitted, the file "
+                "list is read from the datasets '" + INFILE + "' file."
+            ),
+        )
+
+
+        argv = sys.argv[1:]
+        leading_id, rest = self._extract_leading_dataset_id(argv)
+        args = parser.parse_args(rest)
+
         # if logout specified don't require dsid
+        self.logout = args.logout
         if self.logout:
             return
-        # make sure dsid provided
-        if not self.dsid:
-            self.dsid = self._prompt_until_given("Dataset ID (example 'pvc-1'): ")
+
+        if leading_id is not None:
+            args.dataset_id = leading_id
+
+        if not args.dataset_id:
+            if self.dataset_id_required:
+                parser.error("dataset_id is required")
+            else:
+                args.dataset_id = self._prompt_until_given("Dataset ID (example 'pvc-1'): ")
+
+        self.dsid = args.dataset_id
+        self.data_source = args.source
+        self.account_file = args.account_file
+        self.output_dir = args.output_dir
+        self.files = args.files
+
+
+    def _display_values(self):
+        print(f"logout='{self.logout}'")
+        if(self.logout):
+            return
+        print(f"dsid='{self.dsid}'")
+        print(f"data_source='{self.data_source}'")
+        print(f"account_file='{self.account_file}'")
+        print(f"output_dir='{self.output_dir}'")
+        print(f"files='{self.files}'")
+        print(f"username={self.username}")
+        print(f"password={self.password}")
+
 
     def _prompt_until_given(self, prompt):
         """Prompt repeatedly until the user enters a non-empty value."""
@@ -567,9 +658,10 @@ Example
 
     def _parse_account_file(self):
         """Load account information from ACCOUNT_FILE."""
-        account_file = Path(ACCOUNT_FILE)
+        account_file = self.account_file if self.account_file else ACCOUNT_FILE
+        account_file_path = Path(account_file)
         if not account_file.exists():
-            sys.exit(f"File '{ACCOUNT_FILE}' not found.\nAborting.")
+            sys.exit(f"File '{account_file}' not found.\nAborting.")
         file_content = account_file.read_text(encoding="utf-8")
         pattern = r".*?\scrcns_username='(.*)'.*?\scrcns_password='(.*)'"
         match = re.search(pattern, file_content, re.DOTALL)
@@ -577,12 +669,12 @@ Example
             self.username = match.group(1)
             self.password = match.group(2)
             if not self.username or not self.password:
-                sys.exit(f"Error: unable to find non-empty username and password in file '{ACCOUNT_FILE}'.\n"
-                    f"Suggestion: edit file '{ACCOUNT_FILE}' to include your CRCNS.org account information.\n")
+                sys.exit(f"Error: unable to find non-empty username and password in file '{account_file}'.\n"
+                    f"Suggestion: edit file '{account_file}' to include your CRCNS.org account information.\n")
                 sys.exit(1)
         else:
             sys.exit(f"Error: Unable to find:\n# username='<username>'\n"
-                f"# password='<password>'\nin file '{ACCOUNT_FILE}.")
+                f"# password='<password>'\nin file '{account_file}.")
 
 
 def main():
