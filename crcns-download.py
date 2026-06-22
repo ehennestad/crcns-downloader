@@ -11,6 +11,7 @@ import stat
 import pprint
 import getpass
 from pathlib import Path
+from pathlib import PurePath
 
 # Safely check if the user is running at least Python 3.8
 if sys.version_info < (3, 8):
@@ -292,7 +293,7 @@ class Login_crcns:
 
 class Dataset_downloader:
 
-    def __init__(self, requester, dsid, files):
+    def __init__(self, requester, dsid, patterns):
         # requester - Requester object
         # dsid - dataset id, something like 'hc-3'
         self.requester = requester
@@ -303,7 +304,7 @@ class Dataset_downloader:
         # self.cmd_file_filter == Cmd_file_filter(files) if len(files) > 0 else None
         self.download_index()
         self.download_checksums()
-        self.file_list = self.load_index() if files is None else self.make_cmd_file_list(files)
+        self.file_list = self.load_index() if patterns is None else self.make_cmd_file_list(patterns)
         self.download_files("show-info")
         self.download_files("download")
 
@@ -404,14 +405,15 @@ class Dataset_downloader:
                 sys.exit(1)
             specified[name] = new_value
 
-    def make_cmd_file_list(self, files):
-        # generate file_list (list of files to download) from command_line options and index file (to get size)
+    def make_cmd_file_list(self, patterns):
+        # patterns is a list of glob patterns specified on the command line (--patterns option)
+        # generate file_list (list of files to download) from patterns and index file (to get size)
         # go through files listed in index file, check for those that were specified on the command line
         if not os.path.exists(self.index_file_path):
             sys.exit(f"File '{self.index_file_path}' not found.  Aborting.")
-        file_found_status = {file_name.lstrip('/'): False for file_name in files} # Removes any leading forward slashes
-        file_list = []   # to store cmd line specified files found in index file
         file_line_pattern = r"^[ \+]\s*([^\ ]*)\s(\d+)(?:\s*\(([\.\d]+) (\w+)\))?$"
+        # get dictionary of filenames in filelist.txt mapping to size and whether or not mached by a --pattern
+        files_in_txt_file_with_size = {}
         with open(self.index_file_path, 'r', encoding='utf-8') as file:
             for line in file:
                 match = re.search(file_line_pattern, line)
@@ -421,21 +423,29 @@ class Dataset_downloader:
                     file_hsize = match.group(3)
                     file_hsize_unit = match.group(4)
                     # ignore file_hsize and file_hsize_unit because they might not be present
-                    if file_name.lstrip('/') in file_found_status:
-                        # found a file that was specified on the command line --files option
-                        file_list.append([file_name, file_size])
-                        file_found_status[file_name] = True  # flag that name was found
-        # check for any not found
-        not_found = []
-        for file_name, found in file_found_status.items():
-            if not found:
-                not_found.append(file_name)
-        if not_found:
-            print("Error: the following files specified using the '--files'"
-                f" option were not found in dataset '{self.dsid}':")
-            print("\n".join(sorted(not_found)))
-            sys.exit("Aborting")
-        return(file_list)
+                    files_in_txt_file_with_size[file_name] = [file_size, False]
+        # make list of file_name only in txt file
+        files_in_txt_file_name_only = sorted(files_in_txt_file_with_size)
+        # now iterate through cmd line list of patterns (--patterns option)
+        # for each pattern, find the files_in_text that match, and set "found" flag to True
+        patterns_not_matching_any_files = []
+        for glob_pattern in patterns:
+            glob_pattern = glob_pattern.lstrip('/')  # remove any leading slash
+            matching_files = [f for f in files_in_txt_file_name_only if PurePath(f).match(glob_pattern)]
+            if (not matching_files):
+                patterns_not_matching_any_files.append(glob_pattern)
+            else:
+                # set found flag to True for the matching files
+                for file_name in matching_files:
+                    files_in_txt_file_with_size[file_name][1] = True
+        # make file_list (array of [name, size]))
+        file_list = [(key, value[0]) for key, value in files_in_txt_file_with_size.items() if value[1]]
+        if(patterns_not_matching_any_files):
+            print("WARNING: The following patterns (specified with the --patterns option) "
+                "didn't match any files in dataset '{self.dsid}:")
+            print("\n".join(sorted(patterns_not_matching_any_files)))
+        return file_list
+
 
     def download_files(self, step):
         # step 'show-info' displays info about what would be downloaded, but does not download
@@ -564,7 +574,7 @@ class UserInputParser:
         self._parse_args()
         # self._display_values()
         self._parse_account_file()
-        self._display_values()
+        # self._display_values()  $ for testing
         # sys.exit("done for now")
  
 
@@ -644,13 +654,16 @@ class UserInputParser:
         )
 
         parser.add_argument(
-            "-f", "--files",
+            "-p", "--patterns",
             nargs="+",
-            metavar="PATH",
-            help=(
-                "One or more specific files to download, given as paths relative "
-                "to the dataset root (e.g. docs/readme.txt). If omitted, the file "
-                "list is read from the datasets '" + INFILE + "' file."
+            metavar="PATTERN",
+            help=("One or more glob patterns specifying files to download, "
+                    "given relative to the dataset root. Patterns may include "
+                    "wildcards, e.g. 'docs/*' for all files in a directory or "
+                    "'**/*.pdf' for all PDF files regardless of location. If "
+                    "omitted, the list of files to download is read from the dataset's "
+                    "'filelist.txt' file. A plain filename with no wildcards (e.g. "
+                    "'docs/readme.txt') is also valid."
             ),
         )
 
@@ -679,7 +692,7 @@ class UserInputParser:
         self.output_dir = args.output_dir
         if(not self.output_dir.is_dir()):
             sys.exit(f"Error: Specified output directory '{self.output_dir}' does not exist or is a file.")
-        self.files = args.files
+        self.patterns = args.patterns
 
 
     def _display_values(self):
@@ -690,7 +703,7 @@ class UserInputParser:
         print(f"data_source='{self.data_source}'")
         print(f"account_file='{self.account_file}'")
         print(f"output_dir='{self.output_dir}'")
-        print(f"files='{self.files}'")
+        print(f"patterns='{self.patterns}'")
         print(f"username={self.username}")
         print(f"password={self.password}")
 
@@ -729,7 +742,7 @@ def main():
     requester = Requester(ui.data_source, ui.output_dir)
     login = Login_crcns(requester, ui.dsid, ui.username, ui.password, ui.logout)
     print(f"Username '{ui.username}' ({login.html_returned_full_name}) logged in {login.method}.")
-    downloader = Dataset_downloader(requester, ui.dsid, ui.files)
+    downloader = Dataset_downloader(requester, ui.dsid, ui.patterns)
     print("all done")
 
 
