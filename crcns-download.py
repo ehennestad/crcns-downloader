@@ -81,9 +81,8 @@ class Requester:
         return (html, status_code)
 
     def save_data_source(self, new_data_source):
-        """ data source is the server (AWS, NERSC, HPSS) to fetch the data from
-        Currently not implemented on the server, but code added so in in the future
-        data could be downloaded from multiple sources."""
+        """ data source is the server (AWS, NERSC, HPSS) to fetch the data from.
+        If specified is stored in cookie."""
         # print(f"new_data_source={new_data_source}")
         previous_data_source = self.get_cookie_value(source_cookie_name, site_name)
         if(new_data_source is None):
@@ -293,7 +292,7 @@ class Login_crcns:
 
 class Dataset_downloader:
 
-    def __init__(self, requester, dsid):
+    def __init__(self, requester, dsid, files):
         # requester - Requester object
         # dsid - dataset id, something like 'hc-3'
         self.requester = requester
@@ -301,9 +300,10 @@ class Dataset_downloader:
         self.dsid = dsid
         self.index_file = Path(self.dsid, INFILE)
         self.index_file_path = self.output_dir /  self.index_file
+        # self.cmd_file_filter == Cmd_file_filter(files) if len(files) > 0 else None
         self.download_index()
         self.download_checksums()
-        self.load_index()
+        self.file_list = self.load_index() if files is None else self.make_cmd_file_list(files)
         self.download_files("show-info")
         self.download_files("download")
 
@@ -344,10 +344,10 @@ class Dataset_downloader:
         if not os.path.exists(self.index_file_path):
             print(f"File '{self.index_file_path}' not found.  Aborting.")
             sys.exit(1)
-        options = {"mode": ["default", "+"], "source": ["aws", "nersc", "hpss"]}
-        specified = {"mode":None, "source":"aws"}  # updated by function check_for_specification
+        options = {"mode": ["default", "+"],} # used to have "source": ["aws", "nersc", "hpss"]}
+        specified = {"mode":None}  # updated by function check_for_specification
         line_number = 0
-        self.filelist = []
+        file_list = []
         with open(self.index_file_path, 'r', encoding='utf-8') as file:
             for line in file:
                 line_number += 1
@@ -356,7 +356,7 @@ class Dataset_downloader:
                 first_char = line[0]
                 if(first_char == "#"):
                     self.check_for_specification('mode', specified, options, line, line_number)
-                    self.check_for_specification('source', specified, options, line, line_number)
+                    # self.check_for_specification('source', specified, options, line, line_number)
                 else:
                     if specified['mode'] is None:
                         print("mode must be specified before first file (line starting with space or +).\n"
@@ -375,8 +375,9 @@ class Dataset_downloader:
                             file_hsize_unit = match.group(4)
                             # ignore file_hsize and file_hsize_unit because they might not be present
                             # set file_source to None if matches default (first entry in options["source"]), e.g. 'aws'
-                            file_source = None if specified["source"] == options["source"][0] else specified["source"]
-                            self.filelist.append([file_name, file_size, specified["source"]])
+                            # file_source = None if specified["source"] == options["source"][0] else specified["source"]
+                            # file_list.append([file_name, file_size, specified["source"]]) # don't allow
+                            file_list.append([file_name, file_size])
                         else:
                             print(f"Line {line_number} specifying file to download in file '{self.index_file} "
                                 "did not match expected pattern.  Expecting <file_name> <size> [(<hsize> <hunit>)]\n"
@@ -386,11 +387,13 @@ class Dataset_downloader:
                         print(f"Invalid first character in file '{self.index_file_path}' line {line_number}.\n"
                             f"Expecting '#', '+' or ' ' (space). Found '{first_char}\nAborting.")
                         sys.exit(1)
+        return(file_list)
         # print("found filelist:")
         # pprint.pprint(self.filelist)
 
     def check_for_specification(self, name, specified, options, line, line_number):
         # check for specification like:  mode='default' or source='HPSS'
+        # (actually, source not used anymore since is specified on command line)
         pattern = r"^#\s+" + name + r"\s*=\s*'([^']+)'"
         match = re.search(pattern, line)
         if match:
@@ -401,6 +404,38 @@ class Dataset_downloader:
                 sys.exit(1)
             specified[name] = new_value
 
+    def make_cmd_file_list(self, files):
+        # generate file_list (list of files to download) from command_line options and index file (to get size)
+        # go through files listed in index file, check for those that were specified on the command line
+        if not os.path.exists(self.index_file_path):
+            sys.exit(f"File '{self.index_file_path}' not found.  Aborting.")
+        file_found_status = {file_name.lstrip('/'): False for file_name in files} # Removes any leading forward slashes
+        file_list = []   # to store cmd line specified files found in index file
+        file_line_pattern = r"^[ \+]\s*([^\ ]*)\s(\d+)(?:\s*\(([\.\d]+) (\w+)\))?$"
+        with open(self.index_file_path, 'r', encoding='utf-8') as file:
+            for line in file:
+                match = re.search(file_line_pattern, line)
+                if match:
+                    file_name = match.group(1)
+                    file_size = int(match.group(2))
+                    file_hsize = match.group(3)
+                    file_hsize_unit = match.group(4)
+                    # ignore file_hsize and file_hsize_unit because they might not be present
+                    if file_name.lstrip('/') in file_found_status:
+                        # found a file that was specified on the command line --files option
+                        file_list.append([file_name, file_size])
+                        file_found_status[file_name] = True  # flag that name was found
+        # check for any not found
+        not_found = []
+        for file_name, found in file_found_status.items():
+            if not found:
+                not_found.append(file_name)
+        if not_found:
+            print("Error: the following files specified using the '--files'"
+                f" option were not found in dataset '{self.dsid}':")
+            print("\n".join(sorted(not_found)))
+            sys.exit("Aborting")
+        return(file_list)
 
     def download_files(self, step):
         # step 'show-info' displays info about what would be downloaded, but does not download
@@ -410,10 +445,10 @@ class Dataset_downloader:
             sys.exit(1)
         step_show_info = step == "show-info"
         step_download = not step_show_info
-        if len(self.filelist) == 0:
+        if len(self.file_list) == 0:
             print("No files specified for downloading.\nAborting.")
             sys.exit(1)
-        longest_name_width = (max(len(str(item[0])) for item in self.filelist) 
+        longest_name_width = (max(len(str(item[0])) for item in self.file_list) 
             + len(self.dsid) + len(f"{self.output_dir}")) + 2
         print (f"longest_name_width={longest_name_width}")
         human_size_width = 10
@@ -425,8 +460,8 @@ class Dataset_downloader:
         print(f"{'Name':<{longest_name_width}}  {'Size':>{human_size_width}}")
         print("-"*total_width)
         agent = 1;  # indicates this script (crcns-download.py)
-        for file_info in self.filelist:
-            file_name, file_size, source = file_info
+        for file_info in self.file_list:
+            file_name, file_size= file_info
             output_filename = Path(self.dsid, file_name)
             full_path = self.output_dir / output_filename
             full_path_str = f"{full_path}"
@@ -447,8 +482,8 @@ class Dataset_downloader:
                 print("")
                 bytes_needed = file_size
             if step_download:
-                url = (f"{download_url_base}/{self.dsid}/{file_name}&agent={agent}" 
-                    + ("" if source is None else "&" + source))
+                url = f"{download_url_base}/{self.dsid}/{file_name}&agent={agent}" 
+                    # + ("" if source is None else "&" + source))  # source not ued anymore
                 self.requester.download_large_file(url, output_filename)
             download_count += 1
             total_bytes += bytes_needed
@@ -694,7 +729,7 @@ def main():
     requester = Requester(ui.data_source, ui.output_dir)
     login = Login_crcns(requester, ui.dsid, ui.username, ui.password, ui.logout)
     print(f"Username '{ui.username}' ({login.html_returned_full_name}) logged in {login.method}.")
-    downloader = Dataset_downloader(requester, ui.dsid)
+    downloader = Dataset_downloader(requester, ui.dsid, ui.files)
     print("all done")
 
 
