@@ -38,7 +38,8 @@ source_cookie_name="crcns-data-source"
 class Requester:
     # requests page or download file
 
-    def __init__(self, new_data_source):
+    def __init__(self, new_data_source, output_dir):
+        self.output_dir = output_dir
         self.cookie_jar = http.cookiejar.MozillaCookieJar(COOKIE_FILE)
         if os.path.exists(COOKIE_FILE):
             try:
@@ -142,7 +143,8 @@ class Requester:
         # --- THE DIRECTORY FIX ---
         # Extract the directory path from the filename string
         # e.g., 'folder/subfolder/file.txt' becomes 'folder/subfolder'
-        directory = os.path.dirname(output_filename)
+        output_file_path = self.output_dir / output_filename
+        directory = os.path.dirname(output_file_path)
     
         # If a directory path was provided and it doesn't exist yet, create it
         if directory and not os.path.exists(directory):
@@ -154,8 +156,8 @@ class Requester:
         downloaded_bytes = 0
         file_mode = 'wb'
         
-        if os.path.exists(output_filename):
-            downloaded_bytes = os.path.getsize(output_filename)
+        if os.path.exists(output_file_path):
+            downloaded_bytes = os.path.getsize(output_file_path)
             if downloaded_bytes > 0:
                 file_mode = 'ab'
                 print(f"Resuming download from byte offset: {downloaded_bytes}")
@@ -176,7 +178,7 @@ class Requester:
                 total_size = int(content_length) + downloaded_bytes if content_length else None
                 
                 chunk_size = 1024 * 1024 # 1MB chunk size
-                with open(output_filename, file_mode) as f:
+                with open(output_file_path, file_mode) as f:
                     while True:
                         chunk = response.read(chunk_size)
                         if not chunk:
@@ -191,7 +193,7 @@ class Requester:
                             sys.stdout.flush()
 
                 self.save_cookies() # Ensure final download cookies are retained
-                print(f"\n{output_filename} downloaded.")
+                print(f"\n{output_file_path} downloaded.")
                 return True
                 
         except urllib.error.URLError as e:
@@ -295,7 +297,10 @@ class Dataset_downloader:
         # requester - Requester object
         # dsid - dataset id, something like 'hc-3'
         self.requester = requester
+        self.output_dir = requester.output_dir
         self.dsid = dsid
+        self.index_file = Path(self.dsid, INFILE)
+        self.index_file_path = self.output_dir /  self.index_file
         self.download_index()
         self.download_checksums()
         self.load_index()
@@ -303,22 +308,23 @@ class Dataset_downloader:
         self.download_files("download")
 
     def download_index(self):
-        self.index_file = f"{self.dsid}/{INFILE}"
-        if os.path.exists(self.index_file):
+        if os.path.exists(self.index_file_path):
             # index file already downloaded, continue downloading files
             return
-        url = f"{download_url_base}/{self.index_file}"
+        url = f"{download_url_base}/{self.dsid}/{INFILE}"
         output_filename = self.index_file
         self.requester.download_large_file(url, output_filename)
         print("\n" + "="*50)
         print("ℹ️  DATASET INITIALIZED SUCCESSFULLY")
         print("="*50)
-        print(f"1. Open the file: {self.index_file}\n"
+        using_cwd = self.output_dir.name == "" or str(self.output_dir) == "."
+        output_dir_msg = f" -d {self.output_dir}" if not using_cwd else "" 
+        print(f"1. Open the file: {self.index_file_path}\n"
             "2. Follow instructions at the top to edit the file and specify which files to download:\n"
             "   - With mode 'default' put a '#' in front of files to NOT be downloaded. "
             " (All the others WILL be downloaded.)\n"
             "   - With mode '+', put a '+' in front of files to downloaded. (The other files will NOT be downloaded.)\n"
-            f"3. Run 'python downloader.py {self.dsid}' again to start.")
+            f"3. Run 'python downloader.py {self.dsid}{output_dir_msg}' again to start.")
         print("="*50)
         # print(f"Just downloaded '{self.index_file}'.  Edit the file to indicate which files "
         #     "should be downloaded, then rerun this script in order to download those files")
@@ -326,23 +332,23 @@ class Dataset_downloader:
 
     def download_checksums(self):
         # download checksums file for use by verify utility
-        checksums_file_path = f"{self.dsid}/{CHECKSUMS_FILE}"
+        checksums_file_path = self.output_dir / self.dsid / CHECKSUMS_FILE
         if os.path.exists(checksums_file_path):
             # file already downloaded
             return
-        url = f"{download_url_base}/{checksums_file_path}"
-        output_filename = checksums_file_path
+        url = f"{download_url_base}/{self.dsid}/{CHECKSUMS_FILE}"
+        output_filename = Path(self.dsid, CHECKSUMS_FILE)
         self.requester.download_large_file(url, output_filename)
 
     def load_index(self):
-        if not os.path.exists(self.index_file):
-            print(f"File '{self.index_file}' not found.  Aborting.")
+        if not os.path.exists(self.index_file_path):
+            print(f"File '{self.index_file_path}' not found.  Aborting.")
             sys.exit(1)
         options = {"mode": ["default", "+"], "source": ["aws", "nersc", "hpss"]}
         specified = {"mode":None, "source":"aws"}  # updated by function check_for_specification
         line_number = 0
         self.filelist = []
-        with open(self.index_file, 'r', encoding='utf-8') as file:
+        with open(self.index_file_path, 'r', encoding='utf-8') as file:
             for line in file:
                 line_number += 1
                 # line.strip() removes the trailing newline character (\n)
@@ -377,12 +383,11 @@ class Dataset_downloader:
                                 f"Line is:\n{line}\nAborting.")
                             sys.exit(1)
                     elif not (first_char == "#" or (first_char == " " and specified["mode"] == "+")):
-                        print(f"Invalid first character in file '{self.index_file}' line {line_number}.\n"
+                        print(f"Invalid first character in file '{self.index_file_path}' line {line_number}.\n"
                             f"Expecting '#', '+' or ' ' (space). Found '{first_char}\nAborting.")
                         sys.exit(1)
         # print("found filelist:")
         # pprint.pprint(self.filelist)
-
 
     def check_for_specification(self, name, specified, options, line, line_number):
         # check for specification like:  mode='default' or source='HPSS'
@@ -408,21 +413,25 @@ class Dataset_downloader:
         if len(self.filelist) == 0:
             print("No files specified for downloading.\nAborting.")
             sys.exit(1)
-        longest_name_width = max(len(str(item[0])) for item in self.filelist) + len(self.dsid)
+        longest_name_width = (max(len(str(item[0])) for item in self.filelist) 
+            + len(self.dsid) + len(f"{self.output_dir}")) + 2
+        print (f"longest_name_width={longest_name_width}")
         human_size_width = 10
-        total_width = longest_name_width + human_size_width + 2  # two spaces between
+        total_width = longest_name_width + human_size_width + 2  # two slashes in name + 2 spaces between
         download_count=0
         total_bytes=0
         line_count=0
         print( "Would download files:" if step_show_info else "Downloading files:")
-        print(f"{'Name':<{longest_name_width}}  {'Size':<{human_size_width}}")
+        print(f"{'Name':<{longest_name_width}}  {'Size':>{human_size_width}}")
         print("-"*total_width)
         agent = 1;  # indicates this script (crcns-download.py)
         for file_info in self.filelist:
             file_name, file_size, source = file_info
-            full_path=f"{self.dsid}/{file_name}"
+            output_filename = Path(self.dsid, file_name)
+            full_path = self.output_dir / output_filename
+            full_path_str = f"{full_path}"
             size_human = format_bytes(file_size)
-            print(f"{full_path:<{longest_name_width}}  {size_human:>{human_size_width}}", end="")
+            print(f"{full_path_str:<{longest_name_width}}  {size_human:>{human_size_width}}", end="")
             if os.path.exists(full_path):
                 current_size = os.path.getsize(full_path)
                 bytes_needed= file_size - current_size
@@ -438,13 +447,14 @@ class Dataset_downloader:
                 print("")
                 bytes_needed = file_size
             if step_download:
-                url = f"{download_url_base}/{full_path}&agent={agent}" + ("" if source is None else "&" + source)
-                output_filename = full_path
+                url = (f"{download_url_base}/{self.dsid}/{file_name}&agent={agent}" 
+                    + ("" if source is None else "&" + source))
                 self.requester.download_large_file(url, output_filename)
             download_count += 1
             total_bytes += bytes_needed
         size_human = format_bytes(total_bytes)
         if step_show_info:
+            print("-"*total_width)
             print(f"Will download {download_count} files, total of {total_bytes} bytes ({size_human})")
             if total_bytes == 0:
                 print("Nothing to download.  Exiting program.")
@@ -520,7 +530,7 @@ class UserInputParser:
         # self._display_values()
         self._parse_account_file()
         self._display_values()
-        sys.exit("done for now")
+        # sys.exit("done for now")
  
 
     def _extract_leading_dataset_id(self, argv):
@@ -567,7 +577,7 @@ class UserInputParser:
         parser.add_argument(
             "-a", "--account-file",
             type=Path,
-            default=Path.cwd() / "crcns-account.txt",
+            default="crcns-account.txt",
             dest="account_file",
             help="Path to the file containing account credentials (username and "
                  "password). Defaults to 'crcns-account.txt' in the current "
@@ -577,7 +587,7 @@ class UserInputParser:
         parser.add_argument(
             "-d", "--dir",
             type=Path,
-            default=Path.cwd(),
+            default="",  # Path.cwd(), empty for current working directory
             dest="output_dir",
             help=(
                 "Directory in which the dataset's base directory (for example, 'pvc-1') will be created. "
@@ -632,6 +642,8 @@ class UserInputParser:
         self.data_source = args.source
         self.account_file = args.account_file
         self.output_dir = args.output_dir
+        if(not self.output_dir.is_dir()):
+            sys.exit(f"Error: Specified output directory '{self.output_dir}' does not exist or is a file.")
         self.files = args.files
 
 
@@ -679,7 +691,7 @@ class UserInputParser:
 
 def main():
     ui = UserInputParser()
-    requester = Requester(ui.data_source)
+    requester = Requester(ui.data_source, ui.output_dir)
     login = Login_crcns(requester, ui.dsid, ui.username, ui.password, ui.logout)
     print(f"Username '{ui.username}' ({login.html_returned_full_name}) logged in {login.method}.")
     downloader = Dataset_downloader(requester, ui.dsid)
