@@ -2,7 +2,7 @@
 
 Batch downloader and validator for CRCNS.org
 
-A pair of lightweight, zero-dependency Python command-line scripts to batch download datasets from the CRCNS.org repository and verify their integrity using MD5 checksums.
+A pair of lightweight, zero-dependency Python command-line scripts to batch download files from the CRCNS.org repository and verify their integrity using MD5 checksums.
 
 [![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -14,19 +14,18 @@ A pair of lightweight, zero-dependency Python command-line scripts to batch down
 ## 📁 Repository Structure
 * `crcns-download.py` — Initializes datasets and batch downloads files based on user selection.
 * `crcns-validate.py` — Computes MD5 hashes of downloaded files and validates them against expected values.
-* `crcns-account-template.txt` — A template used to create file `crcns-account.txt` which stores the account information for the CRCNS.org account used to download the files.  If you don't have an account you can create one for free.
+* `crcns-account-template.txt` — A template used to create file `crcns-account.txt` which stores the account information for the CRCNS.org account used to download the files.  If you don't have an account you can [create one for free](https://crcns.org/register).
 
 * `README.md` — Project documentation.
 * `LICENSE` — Terms of use (MIT License).
 ---
 
 ## 🚀 Initial Setup
-Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and then edit that file to specify the username and password for the account at CRCNS.org used to download the data.  If you don't have an account you can create one for free.
+Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and then edit that file to specify the username and password for the account at CRCNS.org used to download the data.  If you don't have an account use the above link to create one for free.
 
 *(Note: Instead of using the `crcns-account.txt` file to specify the username and password, you can also specify them 
 in three other ways: on the command-line; using environment variables; or when prompted by the script.  Run the script with the `-h` or `--help` option to see a summary of these option, or view the 
 [details below](#details-about-alternate-ways-of-specifying-account-information).
-
 )*
 
 ## 🚀 How to use the scripts (Step-by-Step)
