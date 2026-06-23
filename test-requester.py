@@ -24,6 +24,21 @@ class Requester:
             except Exception as e:
                 pass
 
+
+        # Try to use certifi bundle if available, otherwise fallback to defaults
+        try:
+            import certifi
+            print("using certifi")
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+        except ImportError:
+            # Fallback for systems that don't have certifi installed
+            print("certifi NOT FOUND")
+            ssl_context = ssl.create_default_context()
+
+        # Create the handler using our robust context
+        ssl_handler = urllib.request.HTTPSHandler(context=ssl_context)
+
+        """
         # --- CROSS-PLATFORM SSL HANDLER SETUP ---
         ssl_context = ssl.create_default_context()
         if sys.platform == "win32":
@@ -40,6 +55,7 @@ class Requester:
             except Exception:
                 pass
         ssl_handler = urllib.request.HTTPSHandler(context=ssl_context)
+        """
 
         self.save_data_source(new_data_source)
         self.cookie_handler = urllib.request.HTTPCookieProcessor(self.cookie_jar)
