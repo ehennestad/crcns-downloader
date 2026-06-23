@@ -16,7 +16,7 @@ These scripts rely primarily on the **Python Standard Library** and work out of 
 python -m pip install certifi
 ```
 
-The download script automatically uses `certifi` when it's present, and falls back to system SSL defaults otherwise. Installing `certifi` is harmless on any platform and may also be useful as a precaution on Windows.
+The download script automatically uses `certifi` when available, and falls back to system SSL defaults otherwise. Installing `certifi` is harmless on any platform and may also be useful as a precaution on Windows.
 
 ---
 
@@ -34,19 +34,20 @@ Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and th
 
 
 ## 🚀 How to use the scripts (Step-by-Step)
-Downloading and verifying the files in a dataset involves an initialization phase, an optional step to select which files should be downloaded, and the final download/validation execution.
+Downloading and verifying the files in a dataset involves an initialization phase, an optional step to select which files should be downloaded, and the final step to download and validate the files.
 ### Step 1: Initialization
-Run the download script and specify a dataset ID. On this first run, the script will fetch two metadata files and then stop so you can you choose which files to download.
+Run the download script and specify a dataset ID. On this first run, the script will fetch two metadata files and then stop so you can you select which files to download.
 ```bash
 python crcns-downloader.py DATASET_ID
 ```
 Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or `hc-2`).
 
-**What happens next:**
+**What this does:**
 1. The script creates a local folder named the DATASET_ID.
-2. It downloads two configuration files into that folder: `filelist.txt` and `checksums.md5`.3. The script prints instructions to your terminal and exits.
+2. It downloads two configuration files into that folder: `filelist.txt` and `checksums.md5`.
+3. The script prints instructions to your terminal and exits.
 ---
-### Step 2: Select Your Files
+### Step 2: Select Files to download
 There are two ways to select which files in the dataset should be downloaded.  The first (recommended for most usage) is by making some small edits to file `filelist.txt`.  The second (useful in some cases) is by using the `--pattern` option on the command line.  If neither of these are done, the initial contents of file `filelist.txt` will be used which selects all the files.
 
 To use the first method, open the newly downloaded `filelist.txt` file in any text editor. By default, every file is listed with a leading space. 
