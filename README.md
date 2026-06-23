@@ -108,96 +108,13 @@ python crcns-validate.py DATASET_ID -p PATTERN [PATTERN ...]
 
 ---
 ## 🤝 Contributing
-Contributions, bug reports, and feature suggestions are welcome! 1. Fork the repository.
+Contributions, bug reports, and feature suggestions are welcome!
+1. Fork the repository.
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
 4. Push to the branch (`git push origin feature/AmazingFeature`).5. Open a Pull Request.
 ---## 📄 License
 Distributed under the MIT License. See the `LICENSE` file in this repository for more details.
-
-
-## Details about alternate ways of specifying account information
-
-The script supports three ways to supply your username and password. Choose whichever suits your workflow. If credentials are provided through more than one method, see [Credential Resolution Order](#credential-resolution-order) for which takes precedence.
-
----
-
-### Option 1: `crcns-account.txt` File (Recommended for Regular Use)
-
-This option was [described above](#initial-setup).
-
-
-> **Security:** On macOS/Linux, restrict the file so only you can read it:
-> ```bash
-> chmod 600 crcns-account.ini
-> ```
-> The script will warn you if the file is readable by other users on the system.
-
-> **Note:** `account-info.ini` is listed in `.gitignore` and will not be committed to the repository. Never commit your credentials.
-
----
-
-### Option 2: Environment Variables
-
-Set the following environment variables before running the script:
-
-| Variable         | Description        |
-|------------------|--------------------|
-| `REPO_USERNAME`  | Your username      |
-| `REPO_PASSWORD`  | Your password      |
-
-**Setting them for a single run:**
-
-```bash
-REPO_USERNAME=myname REPO_PASSWORD=mysecret python download.py DATASET123
-```
-
-**Setting them for the current shell session:**
-
-```bash
-export REPO_USERNAME=myname
-export REPO_PASSWORD=mysecret
-python download.py DATASET123
-```
-
-**In a CI/CD pipeline**, set these as secret environment variables in your pipeline configuration (e.g. GitHub Actions Secrets, GitLab CI Variables).
-
----
-
-### Option 3: Command-Line Arguments
-
-Pass credentials directly as flags. This is useful for one-off runs or testing.
-
-Specify both username and password:
-
-```bash
-python download.py --username myname --password mysecret DATASET123
-```
-
-Specify only the username; the script will prompt for the password securely (input is hidden):
-
-```bash
-python download.py --username myname DATASET123
-Password:
-```
-
-> **Note:** Passing `--password` on the command line may expose your password in your shell history. When possible, omit `--password` and let the script prompt you for it.
-
----
-
-
-## Credential Resolution Order
-
-When credentials are available from more than one source, the script uses the following priority order (highest to lowest):
-
-| Priority | Source                        |
-|----------|-------------------------------|
-| 1        | `--username` / `--password` command-line flags |
-| 2        | `REPO_USERNAME` / `REPO_PASSWORD` environment variables |
-| 3        | `account-info.ini` config file |
-| 4        | Interactive prompt             |
-
-This means, for example, that setting `--username` on the command line will override the username in your config file, while still using the password from the config file.
 
 ---
 
