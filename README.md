@@ -48,7 +48,7 @@ Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or
 2. It downloads two files into that folder: `filelist.txt` and `checksums.md5`.
 3. The script prints instructions to your terminal and exits.
 
-**Command-line options**
+*command-line options:*
 You can use the `-a ACCOUNT_FILE` and `-d OUTPUT_DIR` command-line flags to specify the location of the
 `crcns-account.txt` file and the directory within which the folder named DATASET_ID is created.  And you can use
 the `--help`option to get help about each script.
