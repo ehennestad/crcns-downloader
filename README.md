@@ -1,4 +1,28 @@
 # crcns-downloader
+Batch downloader and validator for CRCNS.org
+A pair of lightweight Python command-line scripts to batch download files from the CRCNS.org repository and verify their integrity using MD5 checksums.
+
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## ⚡ Minimal Dependencies
+
+These scripts rely primarily on the **Python Standard Library** and work out of the box on macOS and Linux with no additional packages required.
+
+**Windows users may need one optional package:** On some Windows installations (particularly fresh installs or virtual machines), Python's built-in SSL certificate store may be incomplete, causing HTTPS connections to fail. If you see a certificate-related error, install `certifi`:
+
+```bash
+python -m pip install certifi
+```
+
+The scripts automatically detect and use `certifi` when it is present, and fall back to system SSL defaults otherwise. Installing `certifi` is harmless on any platform and may also be useful as a precaution on Windows.
+
+---
+
+
+
+
+# crcns-downloader
 
 Batch downloader and validator for CRCNS.org
 
@@ -23,15 +47,11 @@ A pair of lightweight, zero-dependency Python command-line scripts to batch down
 ## 🚀 Initial Setup
 Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and then edit that file to specify the username and password for the account at CRCNS.org used to download the data.  If you don't have an account use the above link to create one for free.
 
-*(Note: Instead of using the `crcns-account.txt` file to specify the username and password, you can also specify them 
-in three other ways: on the command-line; using environment variables; or when prompted by the script.  Run the script with the `-h` or `--help` option to see a summary of these option, or view the 
-[details below](#details-about-alternate-ways-of-specifying-account-information).
-)*
 
 ## 🚀 How to use the scripts (Step-by-Step)
 Downloading and verifying the files in a dataset involves an initialization phase, a quick file configuration step, and the final download/validation execution.
 ### Step 1: Initialize the Dataset
-Run the download script with your dataset ID. On this first run, the script will fetch the metadata files and then pause to let you choose your downloads.
+Run the download script and specify a dataset ID. On this first run, the script will fetch the metadata files and then pause to let you choose which files to download.
 ```bash
 python crcns-downloader.py DATASET_ID
 ```
