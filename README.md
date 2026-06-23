@@ -95,7 +95,7 @@ If using file `filelist.txt` to specify the files to download, run the exact sam
 python crcns-download.py DATASET_ID
 ```
 
-If instead you are specifying which files to download using patterns on the command line, include the `-p` or `--patterns` option followed by the patterns.   This will download all files with a name (full path name) matching any of the specified patterns. Patterns use the glob format.  Examples are `docs/*` (to downlad all files in the docs directory) and `**.pdf` (to download all pdf files regardless of location).  A full path name without wildcards can also be given to download just that file.
+If instead you are specifying which files to download using patterns on the command line, include the  <nobr>`-p` </nobr> or  <nobr>`--patterns`</nobr> option followed by the patterns.   This will download all files with a name (full path name) matching any of the specified patterns. Patterns use the glob format.  Examples are `docs/*` (to downlad all files in the docs directory) and `**.pdf` (to download all pdf files regardless of location).  A full path name without wildcards can also be given to download just that file.
 ```bash
 python crcns-download.py DATASET_ID -p PATTERN [PATTERN ...] 
 ```
