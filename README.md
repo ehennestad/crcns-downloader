@@ -15,24 +15,8 @@ These scripts rely primarily on the **Python Standard Library** and work out of 
 python -m pip install certifi
 ```
 
-The scripts automatically detect and use `certifi` when it is present, and fall back to system SSL defaults otherwise. Installing `certifi` is harmless on any platform and may also be useful as a precaution on Windows.
+The download script automatically detects and use `certifi` when it is present, and falls back to system SSL defaults otherwise. Installing `certifi` is harmless on any platform and may also be useful as a precaution on Windows.
 
----
-
-
-
-
-# crcns-downloader
-
-Batch downloader and validator for CRCNS.org
-
-A pair of lightweight, zero-dependency Python command-line scripts to batch download files from the CRCNS.org repository and verify their integrity using MD5 checksums.
-
-[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-## ⚡ Zero Dependencies
-* These scripts rely entirely on the **Python Standard Library**. No `pip install`, virtual environments, or external packages are required. They work out of the box on Windows, macOS, and Linux.
 ---
 
 ## 📁 Repository Structure
@@ -49,7 +33,7 @@ Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and th
 
 
 ## 🚀 How to use the scripts (Step-by-Step)
-Downloading and verifying the files in a dataset involves an initialization phase, a quick file configuration step, and the final download/validation execution.
+Downloading and verifying the files in a dataset involves an initialization phase, an optional step to select which files should be downloaded, and the final download/validation execution.
 ### Step 1: Initialize the Dataset
 Run the download script and specify a dataset ID. On this first run, the script will fetch the metadata files and then pause to let you choose which files to download.
 ```bash
@@ -62,7 +46,9 @@ Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or
 2. It downloads two configuration files into that folder: `filelist.txt` and `checksums.md5`.3. The script prints instructions to your terminal and exits.
 ---
 ### Step 2: Select Your Files
-Open the newly downloaded `filelist.txt` file in any text editor. By default, every file is listed with a leading space. 
+There are two ways to select which files in the dataset should be downloaded.  The first is by making some small edits to file `filelist.txt`.  The second is by using the `--pattern` option on the command line.  If neither of these are done, the initial contents of file `filelist.txt` will be used which selects all the files.
+
+To use the first method (recommended), open the newly downloaded `filelist.txt` file in any text editor. By default, every file is listed with a leading space. 
 
 You can control how files are selected by changing the **Mode** line near the top of the file, allowing you to make minimal edits depending on your needs.
 
@@ -89,12 +75,25 @@ Use this mode if you only want to download a **few** specific files from a datas
 ```
 
 * *(Advanced: You can use multiple `# mode='...'` lines throughout the file to switch selection modes mid-list.)*
+
+The second method to select files (which is to use the `--patterns` command line flag).  If using this method, there is no need to edit `filelist.txt`.  Go to the next step (Step 3) to execute the download.
+
 ---
 ### Step 3: Execute the Download
-Run the exact same command a second time. The script reads your customized `filelist.txt` and displays the list of files to be downloaded and the total size and prompts you to confirm to proceed.  If you conferm, the script downloads your selected files.
+If using file `filelist.txt` to specify the files to download, run the exact same command you ran in step 2 again. The script reads your customized `filelist.txt` and displays the list of files to be downloaded and the total size and prompts you to confirm to proceed.  If you conferm, the script downloads your selected files.
 ```bash
 python downloader.py DATASET_ID
 ```
+
+or to specify the files by patterns on the command line:
+
+```bash
+python downloader.py DATASET_ID -p PATTERN [PATTERN ...] 
+```
+
+ This will download all files with a name (full path name) matching any of the specified patterns. Patterns use the glob format.  Examples are `docs/*` (to downlad all files in the docs directory) and `**.pdf` (to download all pdf files regardless of location).
+
+
 ---
 ### Step 4: Verify Your Files (`validator.py`)
 Once your downloads are complete, run the validation script with the same dataset ID. It reads the `checksums.md5` file and checks every downloaded file to guarantee nothing was corrupted.
