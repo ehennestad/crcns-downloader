@@ -34,7 +34,7 @@ Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and th
 
 
 ## 🚀 How to use the scripts (Step-by-Step)
-Downloading and verifying the files in a dataset involves an initialization phase, an optional step to select which files should be downloaded, and the final step to download and validate the files.
+Downloading and verifying the files in a dataset involves an initialization phase, an optional step to select which files should be downloaded, and the final steps to download and validate the files.
 ### Step 1: Initialization
 Run the download script and specify a dataset ID. On this first run, the script will fetch two metadata files and then stop so you can you select which files to download.
 ```bash
@@ -44,11 +44,11 @@ Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or
 
 **What this does:**
 1. The script creates a local folder named the DATASET_ID.
-2. It downloads two configuration files into that folder: `filelist.txt` and `checksums.md5`.
+2. It downloads two files into that folder: `filelist.txt` and `checksums.md5`.
 3. The script prints instructions to your terminal and exits.
 ---
 ### Step 2: Select Files to download
-There are two ways to select which files in the dataset should be downloaded.  The first (recommended for most usage) is by making some small edits to file `filelist.txt`.  The second (useful in some cases) is by using the `--pattern` option on the command line.  If neither of these are done, the initial contents of file `filelist.txt` will be used which selects all the files.
+There are two ways to select which files in the dataset should be downloaded.  The first (recommended for most usage) is by making some small edits to file `filelist.txt`.  The second (useful in some cases) is by using the `--pattern` option on the command line.  If neither of these are done all the files are downloaded (because the initial contents of file `filelist.txt` selects all the files).
 
 To use the first method, open the newly downloaded `filelist.txt` file in any text editor. By default, every file is listed with a leading space. 
 
@@ -78,26 +78,22 @@ Use this mode if you only want to download a **few** specific files from a datas
 
 * *(Advanced: You can use multiple `# mode='...'` lines throughout the file to switch selection modes mid-list.)*
 
-The second method to select files (which is to use the `--patterns` command line flag).  If using this method, there is no need to edit `filelist.txt`.  Go to the next step (Step 3).
+If using the second method to select files (which is to use the `--patterns` command line flag) there is no need to edit `filelist.txt`.  Go to the next step (Step 3).
 
 ---
-### Step 3: Execute the Download
+### Step 3: Download the files
 If using file `filelist.txt` to specify the files to download, run the exact same command you ran in step 2 again. The script reads your customized `filelist.txt` and displays the list of files to be downloaded and the total size and prompts you to confirm to proceed.  If you conferm, the script downloads your selected files.
 ```bash
 python crcns-download.py DATASET_ID
 ```
 
-In order to download files that are specified by pattern(s) on the command line:
-
+If instead you are specifying which files to download using patterns on the command line, include the `p` or `--patterns` option followed by the patterns.   This will download all files with a name (full path name) matching any of the specified patterns. Patterns use the glob format.  Examples are `docs/*` (to downlad all files in the docs directory) and `**.pdf` (to download all pdf files regardless of location).  A full path name without wildcards can also be given to download just that file.
 ```bash
 python crcns-download.py DATASET_ID -p PATTERN [PATTERN ...] 
 ```
 
- This will download all files with a name (full path name) matching any of the specified patterns. Patterns use the glob format.  Examples are `docs/*` (to downlad all files in the docs directory) and `**.pdf` (to download all pdf files regardless of location).  A full path name without wildcards can also be given to download just that file.
-
-
 ---
-### Step 4: Verify Your Files (`validator.py`)
+### Step 4: Verify the Files
 Once your downloads are complete, run the validation script with the same dataset ID. It reads the `checksums.md5` file and checks every downloaded file to guarantee nothing was corrupted.
 ```bash
 python crcns-validate.py DATASET_ID
