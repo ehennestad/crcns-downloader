@@ -376,6 +376,7 @@ class Dataset_downloader:
                 # line.strip() removes the trailing newline character (\n)
                 # line = line.strip()
                 first_char = line[0]
+                print(f"first-char='{first_char}', line='" + line.strip() + "'")
                 if(first_char == "#"):
                     self.check_for_specification('mode', specified, options, line, line_number)
                     # self.check_for_specification('source', specified, options, line, line_number)
