@@ -90,7 +90,7 @@ If using the second method to select files (which is to use the `--patterns` com
 
 ---
 ### Step 3: Download the files
-If using file `filelist.txt` to specify the files to download, run the exact same command you ran in [Step 2](Step-2-Select-Files-to-download) again. The script reads your customized `filelist.txt` and displays the list of files to be downloaded and the total size and prompts you to confirm to proceed.  If you conferm, the script downloads your selected files.
+If using file `filelist.txt` to specify the files to download, run the exact same command you ran in [Step 2](#step-2-select-files-to-download) again. The script reads your customized `filelist.txt` and displays the list of files to be downloaded and the total size and prompts you to confirm to proceed.  If you conferm, the script downloads your selected files.
 ```bash
 python crcns-download.py DATASET_ID
 ```
@@ -120,7 +120,8 @@ Contributions, bug reports, and feature suggestions are welcome!
 1. Fork the repository.
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the branch (`git push origin feature/AmazingFeature`).5. Open a Pull Request.
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
 ---## 📄 License
 Distributed under the MIT License. See the `LICENSE` file in this repository for more details.
 
