@@ -10,7 +10,8 @@ A pair of lightweight Python command-line scripts to batch download files from t
 
 These scripts rely primarily on the **Python Standard Library** and work out of the box on macOS and Linux with no additional packages required.
 
-**Windows users may need one optional package:** On some Windows installations (particularly fresh installs or virtual machines), Python's built-in SSL certificate store may be incomplete, causing HTTPS connections to fail. If you see a certificate-related error, install `certifi`:
+**Windows users may need one optional package:**
+On some Windows installations Python's built-in SSL certificate store may be incomplete, causing HTTPS connections to fail. If you see a certificate-related error, install `certifi`:
 
 ```bash
 python -m pip install certifi
@@ -46,6 +47,11 @@ Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or
 1. The script creates a local folder named the DATASET_ID.
 2. It downloads two files into that folder: `filelist.txt` and `checksums.md5`.
 3. The script prints instructions to your terminal and exits.
+
+* *(Advanced: You can use the `-a ACCOUNT_FILE` and `-d OUTPUT_DIR` command line options to specify the location of the
+`crcns-account.txt` file and the directory within which the folder named DATASET_ID is created.  You can use the `-h`
+option to get help.)*
+
 ---
 ### Step 2: Select Files to download
 There are two ways to select which files in the dataset should be downloaded.  The first (recommended for most usage) is by making some small edits to file `filelist.txt`.  The second (useful in some cases) is by using the `--pattern` option on the command line.  If neither of these are done all the files are downloaded (because the initial contents of file `filelist.txt` selects all the files).
