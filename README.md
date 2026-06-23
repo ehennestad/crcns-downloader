@@ -123,7 +123,8 @@ Contributions, bug reports, and feature suggestions are welcome!
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
 4. Push to the branch (`git push origin feature/AmazingFeature`).
 5. Open a Pull Request.
----## 📄 License
+---
+## 📄 License
 Distributed under the MIT License. See the `LICENSE` file in this repository for more details.
 
 ---
@@ -131,8 +132,7 @@ Distributed under the MIT License. See the `LICENSE` file in this repository for
 ## Security Notes
 
 - **Never commit credentials** to version control. The `account-info.ini` file is included in `.gitignore` for this reason.
-- **Use `chmod 600 account-info.ini`** on macOS/Linux to ensure only your user account can read the file.
-- **Avoid `--password` in shell commands** that will be logged in your shell history. Use the interactive prompt or environment variables instead.
-- For automated pipelines, use your platform's secrets management (GitHub Actions Secrets, environment variable injection, etc.) rather than storing credentials in files.
+- **Use `chmod 600 account-info.txt`** on macOS/Linux to ensure only your user account can read the file.
+
 
 
