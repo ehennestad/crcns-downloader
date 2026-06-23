@@ -52,7 +52,7 @@ Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or
 
 You can use the `-a ACCOUNT_FILE` and `-d OUTPUT_DIR` command-line flags to specify the location of the
 `crcns-account.txt` file and the directory within which the folder named DATASET_ID is created.  And you can use
-the `--help`option to get help about each script.
+the `--help` or `-h` option to get help about each script.
 
 ---
 ### Step 2: Select Files to download
