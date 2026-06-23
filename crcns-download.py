@@ -12,6 +12,12 @@ import pprint
 import getpass
 from pathlib import Path
 from pathlib import PurePath
+import ssl
+try:
+    import certifi
+    HAS_CERTIFI = True
+except ImportError:
+    HAS_CERTIFI = False
 
 # Safely check if the user is running at least Python 3.8
 if sys.version_info < (3, 8):
@@ -55,8 +61,23 @@ class Requester:
         self.save_data_source(new_data_source)
         self.cookie_handler = urllib.request.HTTPCookieProcessor(self.cookie_jar)
         self.redirect_handler = urllib.request.HTTPRedirectHandler()
+
+        # --- ADDED CROSS-PLATFORM SSL HANDLER ---
+        if HAS_CERTIFI:
+            # Bulletproof certifi storage for Windows 11 / VMs
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+        else:
+            # Fallback to system defaults if certifi isn't present
+            ssl_context = ssl.create_default_context()
+            
+        ssl_handler = urllib.request.HTTPSHandler(context=ssl_context)
+        # ----------------------------------------
+
+
         # Create the UNIVERSAL opener
-        self.opener = urllib.request.build_opener(self.cookie_handler, self.redirect_handler)
+        self.opener = urllib.request.build_opener(self.cookie_handler, self.redirect_handler
+            , ssl_handler  # added to use certifi
+            )
         # Mimic a standard Windows Chrome browser to sneak past basic bot firewalls
         self.opener.addheaders = [
             ('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
