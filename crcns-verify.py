@@ -44,7 +44,7 @@ def validate_files(dsid, output_dir, patterns):
             line_number += 1
             match = re.search(line_pattern, line)
             if not match:
-                sys.exit(f"Line {line_number} in file '{self.checkssum_file_path} "
+                sys.exit(f"Line {line_number} in file '{checkssum_file_path} "
                     "did not match expected pattern.  Expecting <md5_hash> <file_name>\n"
                     f"Line is:\n{line}\nAborting.")
             expected_hash = match.group(1)

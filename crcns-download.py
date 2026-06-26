@@ -30,10 +30,12 @@ ACCOUNT_FILE="crcns-account.txt"
 COOKIE_FILE = "session_cookies.txt"
 INFILE="filelist.txt"
 CHECKSUMS_FILE="checksums.md5"
+AGENT=1  # flag that this script used to download files
 site_name="crcns.org"
 site_url=f"https://{site_name}"
-apache_alias = "d"  # used to specify page (script) for downloading data
-download_url_base = f"{site_url}/{apache_alias}/"
+# apache_alias = "d"  # used to specify page (script) for downloading data if using main site with /dir/
+# download_url_base = f"{site_url}/{apache_alias}/"
+download_url_base = f"https://download.{site_name}"  # for downloading from subdomain, e.g. download.crcns.org
 login_page=f"{site_url}/login_form"
 logout_page=f"{site_url}/logout"
 script_name = os.path.basename(__file__)
@@ -184,7 +186,7 @@ class Requester:
                 print(f"Resuming download from byte offset: {downloaded_bytes}")
 
         # Construct specific request to append the dynamic Range header
-        req = urllib.request.Request(url)
+        req = urllib.request.Request(url + f"?agent={AGENT}")
         if downloaded_bytes > 0:
             req.add_header('Range', f'bytes={downloaded_bytes}-')
 
@@ -482,7 +484,7 @@ class Dataset_downloader:
             sys.exit(1)
         longest_name_width = (max(len(str(item[0])) for item in self.file_list) 
             + len(self.dsid) + len(f"{self.output_dir}")) + 2
-        print (f"longest_name_width={longest_name_width}")
+        # print (f"longest_name_width={longest_name_width}")
         human_size_width = 10
         total_width = longest_name_width + human_size_width + 2  # two slashes in name + 2 spaces between
         download_count=0
@@ -491,7 +493,6 @@ class Dataset_downloader:
         print( "Would download files:" if step_show_info else "Downloading files:")
         print(f"{'Name':<{longest_name_width}}  {'Size':>{human_size_width}}")
         print("-"*total_width)
-        agent = 1;  # indicates this script (crcns-download.py)
         for file_info in self.file_list:
             file_name, file_size= file_info
             output_filename = Path(self.dsid, file_name)
@@ -514,7 +515,7 @@ class Dataset_downloader:
                 print("")
                 bytes_needed = file_size
             if step_download:
-                url = f"{download_url_base}/{self.dsid}/{file_name}&agent={agent}" 
+                url = f"{download_url_base}/{self.dsid}/{file_name}"
                     # + ("" if source is None else "&" + source))  # source not ued anymore
                 self.requester.download_large_file(url, output_filename)
             download_count += 1
