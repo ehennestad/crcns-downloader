@@ -37,7 +37,7 @@ Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and th
 ## 🚀 How to use the scripts (Step-by-Step)
 Downloading and verifying the files in a dataset involves an initialization phase, an optional step to select which files should be downloaded, and the final steps to download and validate the files.
 ### Step 1: Initialization
-Run the download script and specify a dataset ID. On this first run, the script will fetch two metadata files and then stop so you can you select which files to download.
+Run the download script and specify a dataset ID. On this first run, the script will download a file (named `filelist.txt`) which has a list of all file in the dataset and then stop so you can you select which files to download.
 ```bash
 python crcns-downloader.py DATASET_ID
 ```
@@ -45,7 +45,7 @@ Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or
 
 **What this does:**
 1. The script creates a local folder named the DATASET_ID.
-2. It downloads two files into that folder: `filelist.txt` and `checksums.md5`.
+2. It downloads file  `filelist.txt` into that folder.
 3. The script prints instructions to your terminal and exits.
 
 **Command-line options:**
@@ -56,7 +56,7 @@ the `--help` or `-h` option to get help about each script.
 
 ---
 ### Step 2: Select Files to download
-There are two ways to select which files in the dataset should be downloaded.  The first (recommended for most usage) is by making some small edits to file `filelist.txt`.  The second (useful in some cases) is by using the `--pattern` option on the command line.  If neither of these are done all the files are downloaded (because the initial contents of file `filelist.txt` selects all the files).
+There are two ways to select which files in the dataset should be downloaded.  The first (recommended for most usage) is by making small edits to file `filelist.txt`.  The second (useful in some cases) is by using the `--pattern` option on the command line.  If neither of these are done all the files are downloaded (because the initial contents of file `filelist.txt` selects all the files).
 
 To use the first method, open the newly downloaded `filelist.txt` file in any text editor. By default, every file is listed with a leading space. 
 
