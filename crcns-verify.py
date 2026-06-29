@@ -31,11 +31,50 @@ def validate_files(dsid, output_dir, patterns):
         sys.exit(1)
     # if pattern specified, make a set containing all files matching the pattern
     pattern_file_set = get_pattern_file_set(dsid, checkssum_file_path, patterns) if patterns is not None else None
+    files_to_verify, files_not_downloaded = get_list_of_files_to_verify(checkssum_file_path,
+        pattern_file_set, output_dir / dsid)
+    longest_name_width =  max(len(str(fi[1])) for fi in files_to_verify)
+    header_1 = "File name"
+    header_2 = "----Result----"  # space added so lines up with "NOT matching"
+    spaces_between = 2
+    num_spaces_needed = longest_name_width - len(header_1)
+    fill_gap = " " * num_spaces_needed
+    print(f"{header_1}{fill_gap}  {header_2}")
+    total_width = longest_name_width + len(header_2) + spaces_between  # two spaces between
+    print("-"*total_width)
+    valid_count=0
+    error_count=0
+    for fi in files_to_verify:
+        expected_hash, full_path = fi
+        found_hash = get_md5_hash(full_path)
+        verified = found_hash == expected_hash
+        if verified:
+            valid_count += 1
+        else:
+            error_count += 1
+        msg = "match" if verified else "** MISMATCH **"
+        num_spaces_needed = longest_name_width - len(str(full_path))
+        fill_gap = " " * num_spaces_needed
+        print(f"{full_path}{fill_gap}  {msg}")
+    print("-"*total_width)
+    file_count = valid_count + error_count
+    print(f"Processed {file_count} files.")
+    print(f"Number validated={valid_count}.  Number hash not matching={error_count}.")
+    sys.exit("All done.")
+
+"""
+    print( "File name " + " ")
+
+        print(f"{'Name':<{longest_name_width}}  {'Size':>{human_size_width}}")
+        print("-"*total_width)
+
     file_count=0
     valid_count=0
     error_count=0
     line_number=0
     not_downloaded = []  # names of files not downloaded
+    file_verify_results = []  # list of tuples: (filename, verified);  verified is True or False
+    length_longest_path = 0
     # line in file will be like:
     # eb5053b61c8d32df777f6cfd2b6db06d  docs/crcns-hc2-processing-flowchart.pdf
     line_pattern = r"([^\s]+)\s+(.+?)\s*$"  # will allow spaces in file name (but normally should not occur)
@@ -58,13 +97,68 @@ def validate_files(dsid, output_dir, patterns):
                 not_downloaded.append(f"{file_path}")
                 continue
             found_hash = get_md5_hash(file_path)
-            if found_hash == expected_hash:
-                print(f"{file_path} validated.")
+            verified = found_hash == expected_hash
+            file_verify_results.append( (file_path, verified) )
+            length_longest_path = max(len(file_path), length_longest_path)
+            if verified:
                 valid_count += 1
             else:
-                print(f"** HASH DOES NOT MATCH: {file_path}")
                 error_count += 1
             file_count += 1
+    # display the files
+    print(*)
+    print( "Would download files:" if step_show_info else "Downloading files:")
+        print(f"{'Name':<{longest_name_width}}  {'Size':>{human_size_width}}")
+        print("-"*total_width)
+
+
+
+
+
+
+
+
+
+        longest_name_width = (max(len(str(item[0])) for item in self.file_list) 
+            + len(self.dsid) + len(f"{self.output_dir}")) + 2
+        # print (f"longest_name_width={longest_name_width}")
+        human_size_width = 10
+        total_width = longest_name_width + human_size_width + 2  # two slashes in name + 2 spaces between
+        download_count=0
+        total_bytes=0
+        line_count=0
+        print( "Would download files:" if step_show_info else "Downloading files:")
+        print(f"{'Name':<{longest_name_width}}  {'Size':>{human_size_width}}")
+        print("-"*total_width)
+        for file_info in self.file_list:
+            file_name, file_size= file_info
+            output_filename = Path(self.dsid, file_name)
+            full_path = self.output_dir / output_filename
+            full_path_str = f"{full_path}"
+            size_human = format_bytes(file_size)
+            print(f"{full_path_str:<{longest_name_width}}  {size_human:>{human_size_width}}", end="")
+            if os.path.exists(full_path):
+                current_size = os.path.getsize(full_path)
+                bytes_needed= file_size - current_size
+                if bytes_needed == 0:
+                    print (" - already downloaded.  Skipping")
+                    continue
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     print(f"Processed {file_count} files.")
     print(f"Number validated={valid_count}.  Number hash not matching={error_count}.")
     num_not_downloaded = len(not_downloaded)
@@ -79,6 +173,8 @@ def validate_files(dsid, output_dir, patterns):
         if user_response in ["y", "yes"]:
             print(f"Files not yet downloaded:\n{not_downloaded_file_list}")
     print("All done.")
+"""
+
 
 def get_pattern_file_set(dsid, checkssum_file_path, patterns):
     # returns a set that contains all the files that match a
@@ -113,6 +209,30 @@ def get_pattern_file_set(dsid, checkssum_file_path, patterns):
             f"didn't match any files in dataset '{dsid}':")
         print("\n".join(sorted(patterns_not_matching_any_files)))
     return pattern_file_set
+
+def get_list_of_files_to_verify(checkssum_file_path, pattern_file_set, base_dir):
+    # get list of files selected and which exist
+    # returns:  files_to_verify, files_not_downloaded
+    line_pattern = r"([^\s]+)\s+(.+?)\s*$"  # will allow spaces in file name (but normally should not occur)
+    files_to_verify = []
+    files_not_downloaded = []
+    with open(checkssum_file_path, 'r', encoding='utf-8') as file:
+        for line in file:
+            match = re.search(line_pattern, line)
+            if not match:
+                sys.exit(f"Line {line_number} in file '{self.checkssum_file_path} "
+                    "did not match expected pattern.  Expecting <md5_hash> <file_name>\n"
+                    f"Line is:\n{line}\nAborting.")
+            md5_hash = match.group(1)
+            file_path = match.group(2)
+            want_to_verify = file_path in pattern_file_set if pattern_file_set else True
+            if(want_to_verify):
+                full_path = base_dir / file_path
+                if os.path.exists(full_path):
+                    files_to_verify.append((md5_hash, full_path))
+                else:
+                    files_not_downloaded.append(file_path)
+    return (files_to_verify, files_not_downloaded)
 
 
 def get_dsid_not_used():
