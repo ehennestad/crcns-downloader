@@ -131,8 +131,8 @@ Distributed under the MIT License. See the `LICENSE` file in this repository for
 
 ## Security Notes
 
-- **Never commit credentials** to version control. The `account-info.ini` file is included in `.gitignore` for this reason.
-- **Use `chmod 600 account-info.txt`** on macOS/Linux to ensure only your user account can read the file.
+- **Never commit credentials** to version control. The `crcns-account.txt` file is included in `.gitignore` for this reason.
+- **Use `chmod 600 crcns-account.txt`** on macOS/Linux to ensure only your user account can read the file.
 
 
 
