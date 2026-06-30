@@ -14,6 +14,7 @@ These scripts rely primarily on the **Python Standard Library** and work out of 
 On some Windows installations Python's built-in SSL certificate store may be incomplete, causing HTTPS connections to fail. If you see a certificate-related error, install `certifi`:
 
 ```bash
+# Windows users only (if you experience SSL certificate errors)
 python -m pip install certifi
 ```
 
@@ -38,9 +39,7 @@ Rename (or copy) file `crcns-account-template.txt` to `crcns-account.txt` and th
 Downloading and verifying the files in a dataset involves an initialization phase, an optional step to select which files should be downloaded, and the final steps to download and validate the files.
 ### Step 1: Initialization
 Run the download script and specify a dataset ID. On this first run, the script will download a file (named `filelist.txt`) which has a list of all file in the dataset and then stop so you can you select which files to download.
-
 ```bash
-# Windows users only (if you experience SSL certificate errors)
 python crcns-download.py DATASET_ID
 ```
 Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or `hc-2`).
