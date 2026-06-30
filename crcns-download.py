@@ -37,7 +37,7 @@ site_url=f"https://{site_name}"
 # download_url_base = f"{site_url}/{apache_alias}/"
 download_url_base = f"https://download.{site_name}"  # for downloading from subdomain, e.g. download.crcns.org
 login_page=f"{site_url}/login_form"
-logout_page=f"{site_url}/logout"
+# logout_page=f"{site_url}/logout"
 script_name = os.path.basename(__file__)
 source_cookie_name="crcns-data-source"
 
@@ -244,13 +244,14 @@ class Login_crcns:
             # self.load_account_info()
             self.authorized = self.attempt_login()
             if self.authorized:
-               self.authorized = self.check_access(dsid)
+                print("Successfully logged in to crcns.org")
+                self.authorized = self.check_access(dsid)
         if not self.authorized:
             sys.exit(f"Unable to login user '{username}' to {login_page} for dataset {dsid}.\n"
             f"Check file '{ACCOUNT_FILE}'.")
         
     def do_logout(self):
-        url = logout_page
+        url = f"{download_url_base}/{self.dsid}?cmd=logout"
         html = self.requester.fetch_small(url)
         print("You are now logged out of CRCNS.org")
         sys.exit(0)
@@ -258,6 +259,7 @@ class Login_crcns:
     def check_access(self, dsid):
         url = f"{download_url_base}/{dsid}"
         html, status_code = self.requester.fetch_small(url)
+        # print(f"check_access, url='{url}', status_code='{status_code}'\nhtml={html}")
         clean_text = re.sub(r'<[^>]*>', '', html).lstrip()
         first_line = clean_text.splitlines()[0]
         match = re.search("Login Required", first_line, re.IGNORECASE)
@@ -312,6 +314,8 @@ class Login_crcns:
         }
         html, status_code = self.requester.fetch_small(login_page, form_vars)
         authorized = len(html) > 1000 and status_code == 200
+        # print(f"result of trying to login: status_code={status_code}, len(html)=" + str(len(html))
+        #     + f"authorized={authorized}")
         return authorized
 
 class Dataset_downloader:
@@ -595,6 +599,8 @@ class UserInputParser:
     def __init__(self, dataset_id_required = True):
         self.dataset_id_required = dataset_id_required
         self._parse_args()
+        # if self.logout:
+        #     return;
         # self._display_values()
         self._parse_account_file()
         # self._display_values()  $ for testing
@@ -695,10 +701,10 @@ class UserInputParser:
         leading_id, rest = self._extract_leading_dataset_id(argv)
         args = parser.parse_args(rest)
 
-        # if logout specified don't require dsid
         self.logout = args.logout
-        if self.logout:
-            return
+        # if logout specified don't require dsid  (Commented out because causes an error, attribute not found)
+        # if self.logout:
+        #     return
 
         if leading_id is not None:
             args.dataset_id = leading_id

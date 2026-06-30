@@ -35,12 +35,19 @@ def validate_files(dsid, output_dir, patterns):
         pattern_file_set, output_dir / dsid)
     longest_name_width =  max(len(str(fi[1])) for fi in files_to_verify)
     header_1 = "File name"
-    header_2 = "----Result----"  # space added so lines up with "NOT matching"
-    spaces_between = 2
+    header_2 = "Result"
+    num_spaces_between = 7
+    spaces_gap = " "*num_spaces_between
     num_spaces_needed = longest_name_width - len(header_1)
     fill_gap = " " * num_spaces_needed
-    print(f"{header_1}{fill_gap}  {header_2}")
-    total_width = longest_name_width + len(header_2) + spaces_between  # two spaces between
+    print(f"{header_1}{fill_gap}{spaces_gap}{header_2}")
+    header_1_underscore = "_" * longest_name_width
+    longest_result_message = "** MISMATCH **"
+    len_longest_result_message = len(longest_result_message)
+    result_message_underscore = "_" * len(longest_result_message)
+    # underscore_line = f"{header_1_underscore}{spaces_gap}{result_message_underscore}"
+    # print(underscore_line)
+    total_width = longest_name_width + len_longest_result_message + num_spaces_between  # two spaces between
     print("-"*total_width)
     valid_count=0
     error_count=0
@@ -55,125 +62,12 @@ def validate_files(dsid, output_dir, patterns):
         msg = "match" if verified else "** MISMATCH **"
         num_spaces_needed = longest_name_width - len(str(full_path))
         fill_gap = " " * num_spaces_needed
-        print(f"{full_path}{fill_gap}  {msg}")
+        print(f"{full_path}{fill_gap}{spaces_gap}{msg}")
     print("-"*total_width)
     file_count = valid_count + error_count
     print(f"Processed {file_count} files.")
     print(f"Number validated={valid_count}.  Number hash not matching={error_count}.")
     sys.exit("All done.")
-
-"""
-    print( "File name " + " ")
-
-        print(f"{'Name':<{longest_name_width}}  {'Size':>{human_size_width}}")
-        print("-"*total_width)
-
-    file_count=0
-    valid_count=0
-    error_count=0
-    line_number=0
-    not_downloaded = []  # names of files not downloaded
-    file_verify_results = []  # list of tuples: (filename, verified);  verified is True or False
-    length_longest_path = 0
-    # line in file will be like:
-    # eb5053b61c8d32df777f6cfd2b6db06d  docs/crcns-hc2-processing-flowchart.pdf
-    line_pattern = r"([^\s]+)\s+(.+?)\s*$"  # will allow spaces in file name (but normally should not occur)
-    with open(checkssum_file_path, 'r', encoding='utf-8') as file:
-        for line in file:
-            line_number += 1
-            match = re.search(line_pattern, line)
-            if not match:
-                sys.exit(f"Line {line_number} in file '{checkssum_file_path} "
-                    "did not match expected pattern.  Expecting <md5_hash> <file_name>\n"
-                    f"Line is:\n{line}\nAborting.")
-            expected_hash = match.group(1)
-            file_name = match.group(2)
-            if pattern_file_set and file_name not in pattern_file_set:
-                # this file does not match any of the specified patterns
-                continue
-            file_path= output_dir / dsid / file_name
-            if not os.path.exists(file_path):
-                # file not downloaded
-                not_downloaded.append(f"{file_path}")
-                continue
-            found_hash = get_md5_hash(file_path)
-            verified = found_hash == expected_hash
-            file_verify_results.append( (file_path, verified) )
-            length_longest_path = max(len(file_path), length_longest_path)
-            if verified:
-                valid_count += 1
-            else:
-                error_count += 1
-            file_count += 1
-    # display the files
-    print(*)
-    print( "Would download files:" if step_show_info else "Downloading files:")
-        print(f"{'Name':<{longest_name_width}}  {'Size':>{human_size_width}}")
-        print("-"*total_width)
-
-
-
-
-
-
-
-
-
-        longest_name_width = (max(len(str(item[0])) for item in self.file_list) 
-            + len(self.dsid) + len(f"{self.output_dir}")) + 2
-        # print (f"longest_name_width={longest_name_width}")
-        human_size_width = 10
-        total_width = longest_name_width + human_size_width + 2  # two slashes in name + 2 spaces between
-        download_count=0
-        total_bytes=0
-        line_count=0
-        print( "Would download files:" if step_show_info else "Downloading files:")
-        print(f"{'Name':<{longest_name_width}}  {'Size':>{human_size_width}}")
-        print("-"*total_width)
-        for file_info in self.file_list:
-            file_name, file_size= file_info
-            output_filename = Path(self.dsid, file_name)
-            full_path = self.output_dir / output_filename
-            full_path_str = f"{full_path}"
-            size_human = format_bytes(file_size)
-            print(f"{full_path_str:<{longest_name_width}}  {size_human:>{human_size_width}}", end="")
-            if os.path.exists(full_path):
-                current_size = os.path.getsize(full_path)
-                bytes_needed= file_size - current_size
-                if bytes_needed == 0:
-                    print (" - already downloaded.  Skipping")
-                    continue
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    print(f"Processed {file_count} files.")
-    print(f"Number validated={valid_count}.  Number hash not matching={error_count}.")
-    num_not_downloaded = len(not_downloaded)
-    print(f"{num_not_downloaded} files not yet downoaded.", end="")
-    not_downloaded_file_list = "\n".join(not_downloaded)
-    if num_not_downloaded < 10:
-        print(f"They are:\n{not_downloaded_file_list}")
-    else:
-        prompt = "\nList files not yet download? (y/n): "
-        valid_choices = ["y", "yes", "n", "no"]
-        user_response = get_valid_input(prompt, valid_choices)
-        if user_response in ["y", "yes"]:
-            print(f"Files not yet downloaded:\n{not_downloaded_file_list}")
-    print("All done.")
-"""
 
 
 def get_pattern_file_set(dsid, checkssum_file_path, patterns):
@@ -233,21 +127,6 @@ def get_list_of_files_to_verify(checkssum_file_path, pattern_file_set, base_dir)
                 else:
                     files_not_downloaded.append(file_path)
     return (files_to_verify, files_not_downloaded)
-
-
-def get_dsid_not_used():
-    if len(sys.argv) > 2:
-        print(f"Usage: {os.path.basename(__file__)} [dataset-id]");
-        sys.exit(1)
-    if len(sys.argv) == 2:
-        dsid = sys.argv[1]
-    else:
-        while True:
-            dsid = input("Enter dataset ID (example 'pvc-1': ").strip()
-            if dsid != "":
-                break
-    print ("Validating files in dataset '{dsid}")
-    return dsid
 
 
 def get_valid_input(prompt, valid_choices, case_sensitive=False):
