@@ -39,7 +39,8 @@ Downloading and verifying the files in a dataset involves an initialization phas
 ### Step 1: Initialization
 Run the download script and specify a dataset ID. On this first run, the script will download a file (named `filelist.txt`) which has a list of all file in the dataset and then stop so you can you select which files to download.
 ```bash
-python crcns-downloader.py DATASET_ID
+# Windows users only (if you experience SSL certificate errors)
+python crcns-download.py DATASET_ID
 ```
 Where DATASET_ID is the ID for the dataset at CRCNS.org (for example, `pvc-1` or `hc-2`).
 
@@ -90,7 +91,7 @@ If using the second method to select files (which is to use the `--patterns` com
 
 ---
 ### Step 3: Download the files
-If using file `filelist.txt` to specify the files to download, run the exact same command you ran in [Step 2](#step-2-select-files-to-download) again. The script reads your customized `filelist.txt` and displays the list of files to be downloaded and the total size and prompts you to confirm to proceed.  If you conferm, the script downloads your selected files.
+If using file `filelist.txt` to specify the files to download, run the exact same command you ran in [Step 2](#step-2-select-files-to-download) again. The script reads your customized `filelist.txt` and displays the list of files to be downloaded and the total size and prompts you to confirm to proceed.  If you confirm, the script downloads your selected files.
 ```bash
 python crcns-download.py DATASET_ID
 ```
@@ -105,10 +106,10 @@ python crcns-download.py DATASET_ID -p PATTERN [PATTERN ...]
 ### Step 4: Verify the Files
 Once your downloads are complete, run the validation script with the same dataset ID. It reads the `checksums.md5` file and checks every downloaded file to guarantee nothing was corrupted.
 ```bash
-python crcns-validate.py DATASET_ID
+python crcns-verify.py DATASET_ID
 ```
 
-The `patterns` option can also be given to specifify which files should be verified (instead of veryifying every downloaded file).  This allows verifying some files (but not others) which could be useful if some already-verified data files were exceptionally large and take a long time to verify.
+The `patterns` option can also be given to specify which files should be verified (instead of veryifying every downloaded file).  This allows verifying some files (but not others) which could be useful if some already-verified data files were exceptionally large or numerous and thus take a long time to unnecessarily verify again.
 
 ```bash
 python crcns-validate.py DATASET_ID -p PATTERN [PATTERN ...] 
